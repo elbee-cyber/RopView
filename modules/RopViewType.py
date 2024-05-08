@@ -1,7 +1,10 @@
 from binaryninja import binaryview
 from binaryninjaui import View, ViewType
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QScrollArea, QWidget, QGridLayout, QLineEdit, QComboBox
+from PySide6.QtWidgets import QScrollArea, QWidget, QGridLayout, QLineEdit, QComboBox, QCheckBox, QListWidget, QListWidgetItem, QLabel, QGroupBox, QHBoxLayout
+from .ui.ui_mainwindow import Ui_Form
+from .GadgetSearch import GadgetSearch
+import logging
 
 class RopView(QScrollArea, View):
 	def __init__(self, parent, binaryView):
@@ -9,32 +12,13 @@ class RopView(QScrollArea, View):
 		View.__init__(self)
 		View.setBinaryDataNavigable(self, False)
 		self.setupView(self)
-
 		self.binaryView = binaryView
-		container = QWidget(self)
-		layout = QGridLayout()
+		self.ui = Ui_Form()
+		self.ui.setupUi(self)
 
-		combo_box = QComboBox()
-		combo_box.addItem("Gadget (pnemonic)")
-		combo_box.addItem("Gadget (bytes)")
-		combo_box.addItem("Search filter")
-		combo_box.addItem("Effected register(s)")
-		combo_box.addItem("Instruction")
-		combo_box.setFixedHeight(40)
-
-		searchBox = QLineEdit()
-		font = searchBox.font()
-		font.setPointSize(20)
-		searchBox.setFont(font)
-		searchBox.setClearButtonEnabled(True)
-		searchBox.setFixedWidth(1000)
-		searchBox.setFixedHeight(40)
-		searchBox.setPlaceholderText("Pnemonics, bytes or search filter")
-
-		layout.addWidget(combo_box,0,0)
-		layout.addWidget(searchBox,0,1)
-		container.setLayout(layout)
-		self.setWidget(container)
+		#gs = GadgetSearch(binaryView)
+		#for addr, text in gs.gadget_pool.items():
+		#	self.ui.listWidget_2.addItem(hex(addr)+" "+str(text))
 
 	def getCurrentOffset(self):
 		return 0
