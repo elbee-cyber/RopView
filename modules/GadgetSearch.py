@@ -1,6 +1,5 @@
 from binaryninja import *
 from .constants import *
-from capstone import *
 from logging import *
 
 # Useful
@@ -19,18 +18,23 @@ class GadgetSearch:
                 save = current_addr
                 for i in range(0,count):
                     # Count back 6 from ctrl instruction, stop counting back if byte is non-executable or another ctrl instruction is encountered
-                    if not bv.get_segment_at(current_addr).executable or ctrl in bv.read(current_addr,1):
+                    if not bv.get_segment_at(current_addr).executable:
                         break
                     else:
+                        insn = ""
                         current_addr = save-i
-                        asm = ""
-                        insn = bv.read(current_addr,i+1)
-                        md = Cs(CS_ARCH_X86, CS_MODE_64)
-                        for i in md.disasm(insn,0x1000):
-                            asm += i.mnemonic+" ; "
+                        while current_addr != save:
+                            curr = bv.get_disassembly(current_addr).split()
+                            if ctrl in bv.read(current_addr,1):
+                                current_addr = save
+                                break
+                            insn += ' '.join(curr)+" ; "
+                            current_addr += 1
+                        insn += ' '.join(bv.get_disassembly(current_addr).split())+" ; "
+                        current_addr = save-i
                         if not repeat:
-                            if asm in list(self.gadget_pool.values()):
-                                continue
-
-                        self.gadget_pool[current_addr] = asm
+                            if insn in list(self.gadget_pool.values()):
+                                break
+                        self.gadget_pool[current_addr] = "          " + insn
                 current_addr = save+1
+        log_info(str(self.gadget_pool),"Untitled ROP Assist")

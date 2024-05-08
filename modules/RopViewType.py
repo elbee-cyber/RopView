@@ -16,9 +16,9 @@ class RopView(QScrollArea, View):
 		self.ui = Ui_Form()
 		self.ui.setupUi(self)
 
-		#gs = GadgetSearch(binaryView)
-		#for addr, text in gs.gadget_pool.items():
-		#	self.ui.listWidget_2.addItem(hex(addr)+" "+str(text))
+		gs = GadgetSearch(binaryView)
+		for addr, text in gs.gadget_pool.items():
+			self.ui.listWidget_2.addItem(hex(addr)+" "+str(text))
 
 	def getCurrentOffset(self):
 		return 0

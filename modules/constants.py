@@ -1,6 +1,6 @@
 i386 = []
 amd64 = {
-    'controls':[b'\xc3'],
+    'controls_raw':[b'\xc3'],
     'bitmode':64,
     'registers':['rax']
     }
