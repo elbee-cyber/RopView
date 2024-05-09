@@ -10,6 +10,7 @@ class GadgetSearch:
     def __init__(self, bv, count=6, repeat=False):
         current_addr = bv.start
         control_insn = arch[bv.arch.name]['controls']
+        possible_gadgets = []
         for ctrl in control_insn:
             while current_addr is not None:
                 current_addr = bv.find_next_data(current_addr,ctrl)
@@ -21,20 +22,21 @@ class GadgetSearch:
                     if not bv.get_segment_at(current_addr).executable:
                         break
                     else:
-                        insn = ""
+                        disasm = ''
                         current_addr = save-i
-                        while current_addr != save:
-                            curr = bv.get_disassembly(current_addr).split()
-                            if ctrl in bv.read(current_addr,1):
-                                current_addr = save
-                                break
-                            insn += ' '.join(curr)+" ; "
-                            current_addr += 1
-                        insn += ' '.join(bv.get_disassembly(current_addr).split())+" ; "
-                        current_addr = save-i
+                        md = Cs(capstone_arch[bv.arch.name], bitmode(bv.arch.name))
+                        insn = bv.read(current_addr,i+1)
+                        for i in md.disasm(insn, 0x1000):
+                            disasm += " ".join((i.mnemonic + ' ' + i.op_str + ' ; ').split())
+                        if insn.count(ctrl) > 1:
+                            break
+                        if disasm == '' or disasm == ' ':
+                            continue
+                        disasm = '\t\t'+disasm
                         if not repeat:
-                            if insn in list(self.gadget_pool.values()):
-                                break
-                        self.gadget_pool[current_addr] = "          " + insn
+                            if insn in possible_gadgets:
+                                continue
+                            possible_gadgets.append(insn)
+                        self.gadget_pool[current_addr] = disasm
                 current_addr = save+1
         log_info(str(self.gadget_pool),"Untitled ROP Assist")
