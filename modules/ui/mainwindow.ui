@@ -78,8 +78,52 @@
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
-         <widget class="QListWidget" name="listWidget_2"/>
-         <widget class="QListWidget" name="listWidget"/>
+         <widget class="QTreeWidget" name="gadgetPane">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+          <property name="autoFillBackground">
+           <bool>false</bool>
+          </property>
+          <property name="styleSheet">
+           <string notr="true"/>
+          </property>
+          <property name="editTriggers">
+           <set>QAbstractItemView::AnyKeyPressed|QAbstractItemView::DoubleClicked</set>
+          </property>
+          <property name="tabKeyNavigation">
+           <bool>true</bool>
+          </property>
+          <property name="indentation">
+           <number>0</number>
+          </property>
+          <property name="rootIsDecorated">
+           <bool>true</bool>
+          </property>
+          <property name="uniformRowHeights">
+           <bool>false</bool>
+          </property>
+          <property name="itemsExpandable">
+           <bool>false</bool>
+          </property>
+          <property name="sortingEnabled">
+           <bool>false</bool>
+          </property>
+          <property name="headerHidden">
+           <bool>true</bool>
+          </property>
+          <column>
+           <property name="text">
+            <string>Location</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>Gadget</string>
+           </property>
+          </column>
+         </widget>
+         <widget class="QListWidget" name="detailPane"/>
         </widget>
        </item>
       </layout>

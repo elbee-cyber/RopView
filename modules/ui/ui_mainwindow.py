@@ -16,9 +16,10 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QAbstractItemView, QApplication, QComboBox, QFrame,
-    QGridLayout, QHBoxLayout, QLineEdit, QListView,
-    QListWidget, QListWidgetItem, QPushButton, QSizePolicy,
-    QSplitter, QTabWidget, QVBoxLayout, QWidget)
+    QGridLayout, QHBoxLayout, QHeaderView, QLineEdit,
+    QListView, QListWidget, QListWidgetItem, QPushButton,
+    QSizePolicy, QSplitter, QTabWidget, QTreeWidget,
+    QTreeWidgetItem, QVBoxLayout, QWidget)
 
 class Ui_Form(object):
     def setupUi(self, Form):
@@ -59,12 +60,23 @@ class Ui_Form(object):
         self.splitter = QSplitter(self.GadgetView)
         self.splitter.setObjectName(u"splitter")
         self.splitter.setOrientation(Qt.Horizontal)
-        self.listWidget_2 = QListWidget(self.splitter)
-        self.listWidget_2.setObjectName(u"listWidget_2")
-        self.splitter.addWidget(self.listWidget_2)
-        self.listWidget = QListWidget(self.splitter)
-        self.listWidget.setObjectName(u"listWidget")
-        self.splitter.addWidget(self.listWidget)
+        self.gadgetPane = QTreeWidget(self.splitter)
+        self.gadgetPane.setObjectName(u"gadgetPane")
+        self.gadgetPane.setEnabled(True)
+        self.gadgetPane.setAutoFillBackground(False)
+        self.gadgetPane.setStyleSheet(u"")
+        self.gadgetPane.setEditTriggers(QAbstractItemView.AnyKeyPressed|QAbstractItemView.DoubleClicked)
+        self.gadgetPane.setTabKeyNavigation(True)
+        self.gadgetPane.setIndentation(0)
+        self.gadgetPane.setRootIsDecorated(True)
+        self.gadgetPane.setUniformRowHeights(False)
+        self.gadgetPane.setItemsExpandable(False)
+        self.gadgetPane.setSortingEnabled(False)
+        self.gadgetPane.setHeaderHidden(True)
+        self.splitter.addWidget(self.gadgetPane)
+        self.detailPane = QListWidget(self.splitter)
+        self.detailPane.setObjectName(u"detailPane")
+        self.splitter.addWidget(self.detailPane)
 
         self.horizontalLayout.addWidget(self.splitter)
 
@@ -113,6 +125,9 @@ class Ui_Form(object):
     def retranslateUi(self, Form):
         Form.setWindowTitle(QCoreApplication.translate("Form", u"Form", None))
         self.lineEdit.setPlaceholderText(QCoreApplication.translate("Form", u"Search filter", None))
+        ___qtreewidgetitem = self.gadgetPane.headerItem()
+        ___qtreewidgetitem.setText(1, QCoreApplication.translate("Form", u"Gadget", None));
+        ___qtreewidgetitem.setText(0, QCoreApplication.translate("Form", u"Location", None));
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.GadgetView), QCoreApplication.translate("Form", u"ROP View", None))
         self.ExportButton.setText(QCoreApplication.translate("Form", u"Export", None))
         self.ExportType.setItemText(0, QCoreApplication.translate("Form", u"pwntools", None))

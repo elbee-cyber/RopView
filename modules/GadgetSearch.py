@@ -27,16 +27,18 @@ class GadgetSearch:
                         md = Cs(capstone_arch[bv.arch.name], bitmode(bv.arch.name))
                         insn = bv.read(current_addr,i+1)
                         for i in md.disasm(insn, 0x1000):
-                            disasm += " ".join((i.mnemonic + ' ' + i.op_str + ' ; ').split())
+                            if i.op_str == '':
+                                disasm += i.mnemonic + ' ; '
+                            else:
+                                disasm += i.mnemonic + ' ' + i.op_str + ' ; '
                         if insn.count(ctrl) > 1:
                             break
                         if disasm == '' or disasm == ' ':
                             continue
-                        disasm = '\t\t'+disasm
                         if not repeat:
                             if insn in possible_gadgets:
                                 continue
                             possible_gadgets.append(insn)
                         self.gadget_pool[current_addr] = disasm
                 current_addr = save+1
-        log_info(str(self.gadget_pool),"Untitled ROP Assist")
+        #log_info(str(self.gadget_pool),"Untitled ROP Assist")
