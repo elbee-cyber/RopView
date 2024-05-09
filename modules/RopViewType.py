@@ -18,16 +18,18 @@ class RopView(QScrollArea, View):
 		self.ui.setupUi(self)
 		
 		gs = GadgetSearch(binaryView)
-		
+		gadgets = gs.gadget_pool.items()
+
 		addr_color = QBrush(QColor(108, 193, 108, 255))
 		disasm_color = QBrush(QColor(255, 255, 255, 255))
 		font = QFont()
 		font.setFamily(u"Hack")
 		self.ui.gadgetPane.itemDoubleClicked.connect(self.copy_address)
 		self.ui.gadgetPane.setSortingEnabled(True)
-		self.ui.gadgetPane.setStyleSheet("QTreeWidget::item:selected {background : transparent; border: solid 2px red;}")
+		self.ui.gadgetPane.setStyleSheet("QTreeWidget::item:selected {background : transparent;}")
 
-		for addr, text in gs.gadget_pool.items():
+		self.ui.statusLabel.setText("Gadget count: "+str(len(gadgets)))
+		for addr, text in gadgets:
 			item = QTreeWidgetItem(self.ui.gadgetPane.topLevelItemCount())
 			item.setText(0,hex(addr))
 			item.setFont(1,font)
@@ -37,7 +39,11 @@ class RopView(QScrollArea, View):
 			self.ui.gadgetPane.addTopLevelItem(item)
 
 	def copy_address(self,item,column):
-		addr = item.text(0)
+		addr = int(item.text(0),16)
+		try:
+			self.binaryView.navigate('Linear:ELF',addr)
+		except:
+			pass
 
 	def getCurrentOffset(self):
 		return 0

@@ -16,10 +16,10 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QAbstractItemView, QApplication, QComboBox, QFrame,
-    QGridLayout, QHBoxLayout, QHeaderView, QLineEdit,
-    QListView, QListWidget, QListWidgetItem, QPushButton,
-    QSizePolicy, QSplitter, QTabWidget, QTreeWidget,
-    QTreeWidgetItem, QVBoxLayout, QWidget)
+    QGridLayout, QHBoxLayout, QHeaderView, QLabel,
+    QLineEdit, QListView, QListWidget, QListWidgetItem,
+    QPushButton, QSizePolicy, QSplitter, QTabWidget,
+    QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget)
 
 class Ui_Form(object):
     def setupUi(self, Form):
@@ -40,12 +40,21 @@ class Ui_Form(object):
 
         self.verticalLayout.addWidget(self.lineEdit)
 
+        self.statusLabel = QLabel(Form)
+        self.statusLabel.setObjectName(u"statusLabel")
+        font1 = QFont()
+        font1.setPointSize(9)
+        self.statusLabel.setFont(font1)
+        self.statusLabel.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
+
+        self.verticalLayout.addWidget(self.statusLabel)
+
         self.tabWidget = QTabWidget(Form)
         self.tabWidget.setObjectName(u"tabWidget")
         self.tabWidget.setEnabled(True)
-        font1 = QFont()
-        font1.setFamilies([u"Ubuntu"])
-        self.tabWidget.setFont(font1)
+        font2 = QFont()
+        font2.setFamilies([u"Ubuntu"])
+        self.tabWidget.setFont(font2)
         self.tabWidget.setAutoFillBackground(False)
         self.tabWidget.setStyleSheet(u"QTabWidget::pane { border: 0; }")
         self.tabWidget.setTabPosition(QTabWidget.North)
@@ -125,6 +134,7 @@ class Ui_Form(object):
     def retranslateUi(self, Form):
         Form.setWindowTitle(QCoreApplication.translate("Form", u"Form", None))
         self.lineEdit.setPlaceholderText(QCoreApplication.translate("Form", u"Search filter", None))
+        self.statusLabel.setText("")
         ___qtreewidgetitem = self.gadgetPane.headerItem()
         ___qtreewidgetitem.setText(1, QCoreApplication.translate("Form", u"Gadget", None));
         ___qtreewidgetitem.setText(0, QCoreApplication.translate("Form", u"Location", None));
