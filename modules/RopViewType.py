@@ -7,6 +7,8 @@ from .ui.ui_mainwindow import Ui_Form
 from .GadgetSearch import GadgetSearch
 import logging
 
+# TODO pydoc
+
 class RopView(QScrollArea, View):
 	def __init__(self, parent, binaryView):
 		QScrollArea.__init__(self, parent)
@@ -24,8 +26,8 @@ class RopView(QScrollArea, View):
 		disasm_color = QBrush(QColor(255, 255, 255, 255))
 		font = QFont()
 		font.setFamily(u"Hack")
-		self.ui.gadgetPane.itemDoubleClicked.connect(self.copy_address)
-		self.ui.gadgetPane.setSortingEnabled(True)
+		self.ui.gadgetPane.itemDoubleClicked.connect(self.goto_address)
+		#self.ui.gadgetPane.setSortingEnabled(True)
 		self.ui.gadgetPane.setStyleSheet("QTreeWidget::item:selected {background : transparent;}")
 
 		self.ui.statusLabel.setText("Gadget count: "+str(len(gadgets)))
@@ -38,9 +40,10 @@ class RopView(QScrollArea, View):
 			item.setForeground(1,disasm_color)
 			self.ui.gadgetPane.addTopLevelItem(item)
 
-	def copy_address(self,item,column):
+	def goto_address(self,item,column):
 		addr = int(item.text(0),16)
 		try:
+			# In the future, do something to make this work with something besides ELFs
 			self.binaryView.navigate('Linear:ELF',addr)
 		except:
 			pass
