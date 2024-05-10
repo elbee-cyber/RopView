@@ -8,6 +8,7 @@ class GadgetSearch:
 
     # Stores a dict of gadgets {addr:mnemonic}
     gadget_pool = {}
+    gadget_pool_raw = {}
 
     def __init__(self, bv, count=8, repeat=False):
         """
@@ -55,5 +56,6 @@ class GadgetSearch:
                                 continue
                             used_gadgets.append(insn)
                         self.gadget_pool[current_addr] = disasm
+                        self.gadget_pool_raw[current_addr] = insn
                 # Prepare next insn site
                 current_addr = save+1

@@ -5,6 +5,7 @@ from PySide6.QtGui import *
 from PySide6.QtWidgets import QTreeWidgetItem, QScrollArea
 from .ui.ui_mainwindow import Ui_Form
 from .GadgetSearch import GadgetSearch
+from .GadgetAnalysis import GadgetAnalysis
 import logging
 
 # TODO pydoc
@@ -19,9 +20,9 @@ class RopView(QScrollArea, View):
 		self.ui = Ui_Form()
 		self.ui.setupUi(self)
 		
-		gs = GadgetSearch(binaryView)
-		gadgets = gs.gadget_pool.items()
-
+		# Gadget Pane
+		self.gs = GadgetSearch(binaryView)
+		gadgets = self.gs.gadget_pool.items()
 		addr_color = QBrush(QColor(108, 193, 108, 255))
 		disasm_color = QBrush(QColor(255, 255, 255, 255))
 		font = QFont()
@@ -29,7 +30,6 @@ class RopView(QScrollArea, View):
 		self.ui.gadgetPane.itemDoubleClicked.connect(self.goto_address)
 		#self.ui.gadgetPane.setSortingEnabled(True)
 		self.ui.gadgetPane.setStyleSheet("QTreeWidget::item:selected {background : transparent;}")
-
 		self.ui.statusLabel.setText("Gadget count: "+str(len(gadgets)))
 		for addr, text in gadgets:
 			item = QTreeWidgetItem(self.ui.gadgetPane.topLevelItemCount())
@@ -39,6 +39,9 @@ class RopView(QScrollArea, View):
 			item.setForeground(0,addr_color)
 			item.setForeground(1,disasm_color)
 			self.ui.gadgetPane.addTopLevelItem(item)
+		
+		# Details Pane (GadgetAnalysis)
+		self.ui.gadgetPane.itemSelectionChanged.connect(self.gadgetAnalysis)
 
 	def goto_address(self,item,column):
 		addr = int(item.text(0),16)
@@ -47,6 +50,11 @@ class RopView(QScrollArea, View):
 			self.binaryView.navigate('Linear:ELF',addr)
 		except:
 			pass
+	
+	def gadgetAnalysis(self):
+		addr = int(self.ui.gadgetPane.selectedItems()[0].text(0),16)
+		gadget_str = self.ui.gadgetPane.selectedItems()[0].text(1)
+		ga = GadgetAnalysis(addr,gadget_str,self.binaryView,self.gs.gadget_pool_raw)
 
 	def getCurrentOffset(self):
 		return 0
