@@ -55,7 +55,8 @@ class RopView(QScrollArea, View):
 		addr = int(self.ui.gadgetPane.selectedItems()[0].text(0),16)
 		gadget_str = self.ui.gadgetPane.selectedItems()[0].text(1)
 		ga = GadgetAnalysis(addr, gadget_str, self.binaryView, self.gs.gadget_pool_raw)
-		log_info(str(ga.details),"Untitled ROP Plugin")
+		details = ga.analyze()
+		log_info(str(details),"Untitled ROP Plugin")
 
 	def getCurrentOffset(self):
 		return 0
