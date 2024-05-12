@@ -24,9 +24,12 @@ class GadgetSearch:
         # Used to check for duplicates
         used_gadgets = []
         # Capstone instance used for disassembly
-        md = Cs(capstone_arch[bv.arch.name], bitmode(bv.arch.name))
+        md = Cs(capstone_arch[bv.arch.name], bitmode(bv.arch.name)[0])
         for ctrl in control_insn:
-            raw = next(md.disasm(ctrl, 0x1000)).mnemonic
+            try:
+                raw = next(md.disasm(ctrl, 0x1000)).mnemonic
+            except StopIteration:
+                continue
             # While bv.find_next_data(ctrl) returns true
             while current_addr is not None:
                 current_addr = bv.find_next_data(current_addr,ctrl)

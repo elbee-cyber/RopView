@@ -6,7 +6,7 @@ from PySide6.QtWidgets import QTreeWidgetItem, QScrollArea
 from .ui.ui_mainwindow import Ui_Form
 from .GadgetSearch import GadgetSearch
 from .GadgetAnalysis import GadgetAnalysis
-import logging
+from binaryninja import *
 
 # TODO pydoc
 
@@ -54,7 +54,8 @@ class RopView(QScrollArea, View):
 	def gadgetAnalysis(self):
 		addr = int(self.ui.gadgetPane.selectedItems()[0].text(0),16)
 		gadget_str = self.ui.gadgetPane.selectedItems()[0].text(1)
-		ga = GadgetAnalysis(addr,gadget_str,self.binaryView,self.gs.gadget_pool_raw)
+		ga = GadgetAnalysis(addr, gadget_str, self.binaryView, self.gs.gadget_pool_raw)
+		log_info(str(ga.details),"Untitled ROP Plugin")
 
 	def getCurrentOffset(self):
 		return 0

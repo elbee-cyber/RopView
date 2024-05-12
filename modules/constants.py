@@ -1,12 +1,43 @@
 from capstone import *
+from keystone import *
 from unicorn.unicorn_const import *
 from unicorn.x86_const import *
 
-i386 = []
+i386 = {
+    'controls':[b'\xc3',b'\xc2',b'\xca',b'\xcb'],
+    'bitmode':32,
+    'registers':['eax','ebx','ecx','edx','esi','edi','ebp','esp','eip','ax','bx','cx','dx','ah','al','bh','bl','ch','cl','dh','dl'],
+    'sp':['esp','rsp'],
+    'uregs':{
+        'sp':UC_X86_REG_ESP,
+        'eax':UC_X86_REG_EAX,
+        'ebx':UC_X86_REG_EBX,
+        'ecx':UC_X86_REG_ECX,
+        'edx':UC_X86_REG_EDX,
+        'esi':UC_X86_REG_ESI,
+        'edi':UC_X86_REG_EDI,
+        'ebp':UC_X86_REG_EBP,
+        'esp':UC_X86_REG_ESP,
+        'eip':UC_X86_REG_EIP,
+        'ax':UC_X86_REG_AX,
+        'bx':UC_X86_REG_BX,
+        'cx':UC_X86_REG_CX,
+        'dx':UC_X86_REG_DX,
+        'ah':UC_X86_REG_AH,
+        'al':UC_X86_REG_AL,
+        'bh':UC_X86_REG_BH,
+        'bl':UC_X86_REG_BL,
+        'ch':UC_X86_REG_CH,
+        'cl':UC_X86_REG_CL,
+        'dh':UC_X86_REG_DH,
+        'dl':UC_X86_REG_DL
+    }
+}
 amd64 = {
-    'controls':[b'\xc3'],
+    'controls':[b'\xc3',b'\xc2',b'\xca',b'\xcb'],
     'bitmode':64,
-    'registers':['rax','rbx','rcx','rdx','rsi','rdi','rbp','rsp','r8','r9','r10','r11','r12','r13','r14','r15'],
+    'registers':['rax','rbx','rcx','rdx','rsi','rdi','rbp','rsp','r8','r9','r10','r11','r12','r13','r14','r15']+i386['registers'],
+    'sp':['rsp','esp'],
     'uregs':{
         'sp':UC_X86_REG_RSP,
         'rax':UC_X86_REG_RAX,
@@ -24,11 +55,33 @@ amd64 = {
         'r12':UC_X86_REG_R12,
         'r13':UC_X86_REG_R13,
         'r14':UC_X86_REG_R14,
-        'r15':UC_X86_REG_R15
+        'r15':UC_X86_REG_R15,
+        'eax':UC_X86_REG_EAX,
+        'ebx':UC_X86_REG_EBX,
+        'ecx':UC_X86_REG_ECX,
+        'edx':UC_X86_REG_EDX,
+        'esi':UC_X86_REG_ESI,
+        'edi':UC_X86_REG_EDI,
+        'ebp':UC_X86_REG_EBP,
+        'esp':UC_X86_REG_ESP,
+        'eip':UC_X86_REG_EIP,
+        'ax':UC_X86_REG_AX,
+        'bx':UC_X86_REG_BX,
+        'cx':UC_X86_REG_CX,
+        'dx':UC_X86_REG_DX,
+        'ah':UC_X86_REG_AH,
+        'al':UC_X86_REG_AL,
+        'bh':UC_X86_REG_BH,
+        'bl':UC_X86_REG_BL,
+        'ch':UC_X86_REG_CH,
+        'cl':UC_X86_REG_CL,
+        'dh':UC_X86_REG_DH,
+        'dl':UC_X86_REG_DL
     }
 }
-arm32 = []
-arm64 = []
+arm32 = {}
+arm64 = {}
+mips = {}
 
 arch = {
     'x86':i386,
@@ -58,6 +111,13 @@ capstone_arch = {
     'arm64':0
 }
 
+keystone_arch = {
+    'x86':0,
+    'x86_64':KS_ARCH_X86,
+    'arm32':0,
+    'arm64':0
+}
+
 def bitmode(arch):
     if '64' in arch:
-        return CS_MODE_64
+        return (CS_MODE_64,KS_MODE_64)
