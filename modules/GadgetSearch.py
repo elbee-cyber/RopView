@@ -10,7 +10,7 @@ class GadgetSearch:
     gadget_pool = {}
     gadget_pool_raw = {}
 
-    def __init__(self, bv, count=8, repeat=False):
+    def __init__(self, bv, count=11, repeat=False):
         """
         Responsible for parsing executable segments of memory, counting back from
         *op instructions for gadgets and populating the pool.

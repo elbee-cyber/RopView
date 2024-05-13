@@ -2,11 +2,12 @@ from binaryninja import binaryview
 from binaryninjaui import View, ViewType
 from PySide6.QtCore import Qt, QCoreApplication
 from PySide6.QtGui import *
-from PySide6.QtWidgets import QTreeWidgetItem, QScrollArea
+from PySide6.QtWidgets import QTreeWidgetItem, QScrollArea, QListWidgetItem, QListWidget
 from .ui.ui_mainwindow import Ui_Form
 from .GadgetSearch import GadgetSearch
 from .GadgetAnalysis import GadgetAnalysis
 from binaryninja import *
+from .constants import *
 
 # TODO pydoc
 
@@ -54,9 +55,77 @@ class RopView(QScrollArea, View):
 	def gadgetAnalysis(self):
 		addr = int(self.ui.gadgetPane.selectedItems()[0].text(0),16)
 		gadget_str = self.ui.gadgetPane.selectedItems()[0].text(1)
-		ga = GadgetAnalysis(addr, gadget_str, self.binaryView, self.gs.gadget_pool_raw)
+		ga = GadgetAnalysis(self.binaryView.arch.name, addr, gadget_str, self.gs.gadget_pool_raw, self.gs.gadget_pool)
 		details = ga.analyze()
-		log_info(str(details),"Untitled ROP Plugin")
+		effects = details[0]
+		end_state = ga.end_state.copy()
+		# Handling for Case 1: Stack pivot
+		while details[1] == GA_ERR_STACKPIVOT:
+			ga = GadgetAnalysis(self.binaryView.arch.name, -1, details[2], self.gs.gadget_pool_raw, self.gs.gadget_pool)
+			ga.set_prestate(effects[-1])
+			details = ga.analyze()
+			effects = effects + details[0]
+			ga.emulated[gadget_str] = effects
+			ga.instructions = gadget_str.split(';')
+			ga.end_state = end_state | ga.end_state.copy()
+			ga.saved_end_states[gadget_str] = ga.end_state.copy()
+		self.renderAnalysisPane(effects,ga)
+
+	def renderAnalysisPane(self,effects,ga):
+		detailPane = self.ui.detailPane
+		for i in range(0,detailPane.count()):
+			detailPane.takeItem(0)
+
+		labelFont = QFont(u"Hack",14)
+		itemFont = QFont(u"Hack",12)
+
+		# Before analysis
+		beforeLabel = QListWidgetItem(detailPane)
+		beforeLabel.setText("Before analysis:")
+		beforeLabel.setFont(labelFont)
+		detailPane.addItem(beforeLabel)
+
+		for key,value in ga.prestate.items():
+			item = QListWidgetItem(detailPane)
+			item.setText(key+" = "+hex(value))
+			item.setFont(itemFont)
+			detailPane.addItem(item)
+
+		# Instructions
+		i = 0
+		for inst in ga.instructions:
+			space = QListWidgetItem(detailPane)
+			detailPane.addItem(space)
+			if inst == ga.instructions[-2]:
+				break
+			if inst[0] == ' ':
+				inst = inst[1:]
+			itemLabel = QListWidgetItem(detailPane)
+			itemLabel.setText(inst)
+			itemLabel.setFont(labelFont)
+			detailPane.addItem(itemLabel)
+			for key,value in effects[i].items():
+				item = QListWidgetItem(detailPane)
+				item.setText(key+" -> "+str(value))
+				item.setFont(itemFont)
+				detailPane.addItem(item)
+			i += 1
+
+		# End state
+		afterLabel = QListWidgetItem(detailPane)
+		afterLabel.setText("After analysis:")
+		afterLabel.setFont(labelFont)
+		detailPane.addItem(afterLabel)
+
+		for key,value in ga.end_state.items():
+			item = QListWidgetItem(detailPane)
+			try:
+				item.setText(key+" = "+hex(value))
+			except TypeError:
+				item.setText(key+" = "+value)
+			item.setFont(itemFont)
+			detailPane.addItem(item)
+
 
 	def getCurrentOffset(self):
 		return 0

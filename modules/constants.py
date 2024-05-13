@@ -3,11 +3,16 @@ from keystone import *
 from unicorn.unicorn_const import *
 from unicorn.x86_const import *
 
+GA_ERR_STACKPIVOT = 1
+GA_ERR_FETCH_UNMAPPED = 2
+GA_ERR_READ_UNMAPPED = 3
+GA_ERR_WRITE_UNMAPPED = 4
+
 i386 = {
     'controls':[b'\xc3',b'\xc2',b'\xca',b'\xcb'],
     'bitmode':32,
     'registers':['eax','ebx','ecx','edx','esi','edi','ebp','esp','eip','ax','bx','cx','dx','ah','al','bh','bl','ch','cl','dh','dl'],
-    'sp':['esp','rsp'],
+    'sp':['esp'],
     'uregs':{
         'sp':UC_X86_REG_ESP,
         'eax':UC_X86_REG_EAX,
