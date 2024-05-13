@@ -8,8 +8,9 @@ class GadgetSearch:
 
     # Stores a dict of gadgets {addr:mnemonic}
     gadget_pool = {}
+    gadget_pool_raw = {}
 
-    def __init__(self, bv, count=8, repeat=False):
+    def __init__(self, bv, count=11, repeat=False):
         """
         Responsible for parsing executable segments of memory, counting back from
         *op instructions for gadgets and populating the pool.
@@ -23,9 +24,12 @@ class GadgetSearch:
         # Used to check for duplicates
         used_gadgets = []
         # Capstone instance used for disassembly
-        md = Cs(capstone_arch[bv.arch.name], bitmode(bv.arch.name))
+        md = Cs(capstone_arch[bv.arch.name], bitmode(bv.arch.name)[0])
         for ctrl in control_insn:
-            raw = next(md.disasm(ctrl, 0x1000)).mnemonic
+            try:
+                raw = next(md.disasm(ctrl, 0x1000)).mnemonic
+            except StopIteration:
+                continue
             # While bv.find_next_data(ctrl) returns true
             while current_addr is not None:
                 current_addr = bv.find_next_data(current_addr,ctrl)
@@ -55,5 +59,6 @@ class GadgetSearch:
                                 continue
                             used_gadgets.append(insn)
                         self.gadget_pool[current_addr] = disasm
+                        self.gadget_pool_raw[current_addr] = insn
                 # Prepare next insn site
                 current_addr = save+1
