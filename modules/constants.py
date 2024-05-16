@@ -4,15 +4,21 @@ from unicorn.unicorn_const import *
 from unicorn.x86_const import *
 
 GA_ERR_STACKPIVOT = 1
-GA_ERR_FETCH_UNMAPPED = 2
+GA_ERR_FOLLOW_UNMAPPED = 2
 GA_ERR_READ_UNMAPPED = 3
 GA_ERR_WRITE_UNMAPPED = 4
+GA_ERR_DEREF_PC = 5
+GA_NULL_DEREF = 6
 
 i386 = {
     'controls':[b'\xc3',b'\xc2',b'\xca',b'\xcb'],
     'bitmode':32,
-    'registers':['eax','ebx','ecx','edx','esi','edi','ebp','esp','eip','ax','bx','cx','dx','ah','al','bh','bl','ch','cl','dh','dl'],
+    # Tokens for string parsing
+    'registers':['eax','ebx','ecx','edx','esi','edi','ebp','esp','eip',
+    ' ax',' bx',' cx',' dx',' ah',' al',' bh',' bl',' ch',' cl',' dh',' dl',
+    '[ax','[bx','[cx','[dx','[ah','[al','[bh','[bl','[ch','[cl','[dh','[dl'],
     'sp':['esp'],
+    'pc':['eip'],
     'uregs':{
         'sp':UC_X86_REG_ESP,
         'eax':UC_X86_REG_EAX,
@@ -38,11 +44,13 @@ i386 = {
         'dl':UC_X86_REG_DL
     }
 }
+
 amd64 = {
     'controls':[b'\xc3',b'\xc2',b'\xca',b'\xcb'],
     'bitmode':64,
     'registers':['rax','rbx','rcx','rdx','rsi','rdi','rbp','rsp','r8','r9','r10','r11','r12','r13','r14','r15']+i386['registers'],
     'sp':['rsp','esp'],
+    'pc':['rip','eip'],
     'uregs':{
         'sp':UC_X86_REG_RSP,
         'rax':UC_X86_REG_RAX,
@@ -61,29 +69,10 @@ amd64 = {
         'r13':UC_X86_REG_R13,
         'r14':UC_X86_REG_R14,
         'r15':UC_X86_REG_R15,
-        'eax':UC_X86_REG_EAX,
-        'ebx':UC_X86_REG_EBX,
-        'ecx':UC_X86_REG_ECX,
-        'edx':UC_X86_REG_EDX,
-        'esi':UC_X86_REG_ESI,
-        'edi':UC_X86_REG_EDI,
-        'ebp':UC_X86_REG_EBP,
-        'esp':UC_X86_REG_ESP,
-        'eip':UC_X86_REG_EIP,
-        'ax':UC_X86_REG_AX,
-        'bx':UC_X86_REG_BX,
-        'cx':UC_X86_REG_CX,
-        'dx':UC_X86_REG_DX,
-        'ah':UC_X86_REG_AH,
-        'al':UC_X86_REG_AL,
-        'bh':UC_X86_REG_BH,
-        'bl':UC_X86_REG_BL,
-        'ch':UC_X86_REG_CH,
-        'cl':UC_X86_REG_CL,
-        'dh':UC_X86_REG_DH,
-        'dl':UC_X86_REG_DL
     }
 }
+amd64['uregs'].update(i386['uregs'])
+
 arm32 = {}
 arm64 = {}
 mips = {}

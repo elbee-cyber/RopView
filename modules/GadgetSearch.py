@@ -3,62 +3,80 @@ from .constants import *
 
 class GadgetSearch:
     """
-    Custom tool that discovers ROP gadgets in executable segments of memory.
+    Discovers ROP gadgets in executable segments of memory.
     """
 
-    # Stores a dict of gadgets {addr:mnemonic}
+    # Dict of gadget mnemonics {addr:str}
     gadget_pool = {}
+
+    # Dict of raw gadgets {addr:bytes}
     gadget_pool_raw = {}
 
-    def __init__(self, bv, count=11, repeat=False):
+    def __init__(self, bv, depth=11, repeat=False):
         """
-        Responsible for parsing executable segments of memory, counting back from
-        *op instructions for gadgets and populating the pool.
-        :param `bv`: BinaryView object of the current plugin pane.
-        :param `count`: How many bytes back to process a gadget (default=8).
-        :param `repeat`: Include duplicate gadgets (default=False).
+        Responsible for gadget searching with applied options. 
+        Find all control instructions in executable segments and count back by depth, saving each gadget
+        :param bv: BinaryView
+        :param depth: How many bytes back from a ctrl to save gadgets (instructions on x86 do not have a constant size, special handling required for other archs) (default=11)
+        :param repeat: Include duplicate gadgets (default=False)
         """
+
+        # Start at first address of the loaded binary
         current_addr = bv.start
-        # Resolve a list of control-flow instructions for the arch
+
+        # Control-flow instructions
         control_insn = arch[bv.arch.name]['controls']
+
         # Used to check for duplicates
         used_gadgets = []
+
         # Capstone instance used for disassembly
         md = Cs(capstone_arch[bv.arch.name], bitmode(bv.arch.name)[0])
+
+        # Search for all types of OP
         for ctrl in control_insn:
             try:
+                # Current control instruction for search
                 raw = next(md.disasm(ctrl, 0x1000)).mnemonic
             except StopIteration:
                 continue
-            # While bv.find_next_data(ctrl) returns true
+
+            # if current_addr is None, search complete
             while current_addr is not None:
+                # Current address of control instruction to analyze
                 current_addr = bv.find_next_data(current_addr,ctrl)
                 if current_addr is None:
                     break
-                # Save the actual current insn site before editing it in place for count
+                # Save the actual gadget site, sub-gadgets are derived via editing in place
                 save = current_addr
-                for i in range(0,count):
+                for i in range(0,depth):
+                    # Make sure potential gadget site is in executable segment
                     if not bv.get_segment_at(current_addr).executable:
                         break
                     else:
                         disasm = ''
-                        # Disassemble from insn_site-i to ctrl_insn
+                        # Current gadget site based on depth
                         current_addr = save-i
                         insn = bv.read(current_addr,i+1)
+                        # Save current gadget to disasm
                         for i in md.disasm(insn, 0x1000):
                             if i.op_str == '':
                                 disasm += i.mnemonic + ' ; '
                             else:
                                 disasm += i.mnemonic + ' ' + i.op_str + ' ; '
+                        # Double gadget case
                         if insn.count(ctrl) > 1:
                             break
+                        # No gadget case
                         if disasm == '' or disasm == ' ' or raw not in disasm:
                             continue
+                        # If repeat=False and gadget already found do not save, otherwise stash in used_gadgets
                         if not repeat:
                             if insn in used_gadgets:
                                 continue
                             used_gadgets.append(insn)
+                        # Append found gadget to gadget pool mnemonic and raw
                         self.gadget_pool[current_addr] = disasm
                         self.gadget_pool_raw[current_addr] = insn
-                # Prepare next insn site
+                # Prepare start bound for next search
                 current_addr = save+1
