@@ -4,8 +4,8 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import *
 from PySide6.QtWidgets import QTreeWidgetItem, QScrollArea, QListWidgetItem, QListWidget
 from .ui.ui_mainwindow import Ui_Form
-from .GadgetSearch import GadgetSearch
 from .GadgetAnalysis import GadgetAnalysis
+from .GadgetRender import GadgetRender
 from binaryninja import *
 from .constants import *
 
@@ -30,24 +30,12 @@ class RopView(QScrollArea, View):
 		self.ui.setupUi(self)
 		
 		# Gadget Pane
-		self.gs = GadgetSearch(binaryView)
-		gadgets = self.gs.gadget_pool.items()
-		addr_color = QBrush(QColor(108, 193, 108, 255))
-		disasm_color = QBrush(QColor(255, 255, 255, 255))
-		font = QFont()
-		font.setFamily(u"Hack")
+		renderer = GadgetRender(self.binaryView, self.ui)
+		self.gadget_pool = renderer.gs.gadget_pool
+		self.gadget_pool_raw = renderer.gs.gadget_pool_raw
+
 		# Slot/signal, double clicking a gadget navigates to linear bv address
 		self.ui.gadgetPane.itemDoubleClicked.connect(self.goto_address)
-		# Add gadgets to gadget search pane
-		self.ui.statusLabel.setText("Gadget count: "+str(len(gadgets)))
-		for addr, text in gadgets:
-			item = QTreeWidgetItem(self.ui.gadgetPane.topLevelItemCount())
-			item.setText(0,hex(addr))
-			item.setFont(1,font)
-			item.setText(1,text)
-			item.setForeground(0,addr_color)
-			item.setForeground(1,disasm_color)
-			self.ui.gadgetPane.addTopLevelItem(item)
 		
 		# Slot/signal, navigating gadget search pane populates analysis pane for selected gadget
 		self.ui.gadgetPane.itemSelectionChanged.connect(self.gadgetAnalysis)
@@ -75,7 +63,7 @@ class RopView(QScrollArea, View):
 		gadget_str = self.ui.gadgetPane.selectedItems()[0].text(1)
 
 		# Create a new GadgetAnalysis from current context and selected gadget
-		ga = GadgetAnalysis(self.binaryView.arch.name, addr, gadget_str, self.gs.gadget_pool_raw, self.gs.gadget_pool)
+		ga = GadgetAnalysis(self.binaryView.arch.name, addr, gadget_str, self.gadget_pool_raw, self.gadget_pool)
 		details = ga.analyze()
 		effects = details[0]
 		end_state = ga.end_state.copy()
@@ -85,7 +73,7 @@ class RopView(QScrollArea, View):
 		errno = details[1]
 		while details[1] == GA_ERR_STACKPIVOT:
 			# Create new GadgetAnalysis based on remaining gadget after stack pivot with a precontext of the state before the stack pivot
-			ga = GadgetAnalysis(self.binaryView.arch.name, -1, details[2], self.gs.gadget_pool_raw, self.gs.gadget_pool)
+			ga = GadgetAnalysis(self.binaryView.arch.name, -1, details[2], self.gadget_pool_raw, self.gadget_pool)
 			ga.set_prestate(end_state)
 			details = ga.analyze()
 			effects = effects + details[0]

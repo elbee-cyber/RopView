@@ -12,7 +12,7 @@ class GadgetSearch:
     # Dict of raw gadgets {addr:bytes}
     gadget_pool_raw = {}
 
-    def __init__(self, bv, depth=11, repeat=False):
+    def __init__(self, bv, depth=16, repeat=False):
         """
         Responsible for gadget searching with applied options. 
         Find all control instructions in executable segments and count back by depth, saving each gadget
