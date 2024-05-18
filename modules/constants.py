@@ -19,6 +19,7 @@ i386 = {
     '[ax','[bx','[cx','[dx','[ah','[al','[bh','[bl','[ch','[cl','[dh','[dl'],
     'sp':['esp'],
     'pc':['eip'],
+    'prestateOpts':['eax','ebx','ecx','edx','esi','edi','ebp'],
     'uregs':{
         'sp':UC_X86_REG_ESP,
         'eax':UC_X86_REG_EAX,
@@ -51,6 +52,7 @@ amd64 = {
     'registers':['rax','rbx','rcx','rdx','rsi','rdi','rbp','rsp','r8','r9','r10','r11','r12','r13','r14','r15']+i386['registers'],
     'sp':['rsp','esp'],
     'pc':['rip','eip'],
+    'prestateOpts':['rax','rbx','rcx','rdx','rsi','rdi','rbp','r8','r9','r10','r11','r12','r13','r14','r15'],
     'uregs':{
         'sp':UC_X86_REG_RSP,
         'rax':UC_X86_REG_RAX,
