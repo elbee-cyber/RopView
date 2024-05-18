@@ -5,8 +5,14 @@ from .constants import *
 from binaryninja import log_info
 
 class GadgetRender:
-
+    '''
+    Responsible for doing gadget search, rendering to UI gadget search pane, 
+    connecting option changes and updating the pane based on option changes.
+    '''
     def __init__(self, bv, ui):
+        '''
+        Configure default options, initial gadgetsearch, display right registers into prestate options ui.
+        '''
         self.bad_bytes = []
         self.depth = 16
         self.block = []
@@ -27,6 +33,7 @@ class GadgetRender:
         self.pool_sorted = self.gs.gadget_pool.items()
         self.render_gadgets(self.pool_sorted)
 
+        # Load the correct register names into the analysis prestate UI (Options tab)
         reg_label = getattr(self.ui,"reglabel",-1)
         reg_label.setText(arch[self.bv_arch]['prestateOpts'][0]+'=')
         i = 2
@@ -37,19 +44,35 @@ class GadgetRender:
             try:
                 reg_label.setText(arch[self.bv_arch]['prestateOpts'][i-1]+'=')
             except IndexError:
+                # Might look prettier if we do a modulo check to add horizontal spaces in the vertical layout so its all aligned
                 reg_label.setVisible(False)
                 getattr(self.ui,"regedit_"+str(i)).setVisible(False)
             i += 1
-        log_info(i,'stuff')
 
     def update_and_sort(self):
-        pass
+        '''
+        Clears gadget search pane (ui)
+        Calls sort (sorts sorted_pool according to options)
+        Re renders gadget search pane (ui)
+        '''
+        self.clear_gadgets()
+        # NOTE:
+        # Sorted pool should be a deep copy and not effect the gs pool, the gs pool reference
+        # should be maintained for future sorting.
+        self.sort(pool)
+        self.render_gadgets(pool)
     
     def clear_gadgets(self):
+        '''
+        Clears gadgets in search pane
+        '''
         self.ui.statusLabel.setText("")
         self.ui.gadgetPane.clear()
 
     def render_gadgets(self,pool):
+        '''
+        Renders gadgets in pool into search pane
+        '''
         addr_color = QBrush(QColor(108, 193, 108, 255))
         disasm_color = QBrush(QColor(255, 255, 255, 255))
         font = QFont()
@@ -65,7 +88,10 @@ class GadgetRender:
             item.setForeground(1,disasm_color)
             self.ui.gadgetPane.addTopLevelItem(item)
 
-    def sort(self):
+    def sort(self, pool):
+        '''
+        Sorting logic according to options done here. Some options will require a new gadget search be done in (update gs)
+        before actual sorting can take place (ei depth)
+        '''
         if self.bad_bytes != []:
             pass
-        

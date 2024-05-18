@@ -835,9 +835,9 @@
                     </layout>
                    </item>
                    <item>
-                    <layout class="QHBoxLayout" name="regOption_24">
+                    <layout class="QHBoxLayout" name="regOption_16">
                      <item>
-                      <widget class="QLabel" name="reglabel_24">
+                      <widget class="QLabel" name="reglabel_16">
                        <property name="sizePolicy">
                         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                          <horstretch>0</horstretch>
@@ -855,7 +855,7 @@
                       </widget>
                      </item>
                      <item>
-                      <widget class="QLineEdit" name="regedit_24">
+                      <widget class="QLineEdit" name="regedit_16">
                        <property name="sizePolicy">
                         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                          <horstretch>0</horstretch>
@@ -873,9 +873,9 @@
                     </layout>
                    </item>
                    <item>
-                    <layout class="QHBoxLayout" name="regOption_25">
+                    <layout class="QHBoxLayout" name="regOption_17">
                      <item>
-                      <widget class="QLabel" name="reglabel_25">
+                      <widget class="QLabel" name="reglabel_17">
                        <property name="sizePolicy">
                         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                          <horstretch>0</horstretch>
@@ -893,7 +893,7 @@
                       </widget>
                      </item>
                      <item>
-                      <widget class="QLineEdit" name="regedit_25">
+                      <widget class="QLineEdit" name="regedit_17">
                        <property name="sizePolicy">
                         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                          <horstretch>0</horstretch>
@@ -911,9 +911,9 @@
                     </layout>
                    </item>
                    <item>
-                    <layout class="QHBoxLayout" name="regOption_26">
+                    <layout class="QHBoxLayout" name="regOption_18">
                      <item>
-                      <widget class="QLabel" name="reglabel_26">
+                      <widget class="QLabel" name="reglabel_18">
                        <property name="sizePolicy">
                         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                          <horstretch>0</horstretch>
@@ -931,7 +931,7 @@
                       </widget>
                      </item>
                      <item>
-                      <widget class="QLineEdit" name="regedit_26">
+                      <widget class="QLineEdit" name="regedit_18">
                        <property name="sizePolicy">
                         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                          <horstretch>0</horstretch>
@@ -949,9 +949,9 @@
                     </layout>
                    </item>
                    <item>
-                    <layout class="QHBoxLayout" name="regOption_27">
+                    <layout class="QHBoxLayout" name="regOption_19">
                      <item>
-                      <widget class="QLabel" name="reglabel_27">
+                      <widget class="QLabel" name="reglabel_19">
                        <property name="sizePolicy">
                         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                          <horstretch>0</horstretch>
@@ -969,7 +969,7 @@
                       </widget>
                      </item>
                      <item>
-                      <widget class="QLineEdit" name="regedit_27">
+                      <widget class="QLineEdit" name="regedit_19">
                        <property name="sizePolicy">
                         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                          <horstretch>0</horstretch>
@@ -987,9 +987,9 @@
                     </layout>
                    </item>
                    <item>
-                    <layout class="QHBoxLayout" name="regOption_28">
+                    <layout class="QHBoxLayout" name="regOption_20">
                      <item>
-                      <widget class="QLabel" name="reglabel_28">
+                      <widget class="QLabel" name="reglabel_20">
                        <property name="sizePolicy">
                         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                          <horstretch>0</horstretch>
@@ -1007,7 +1007,7 @@
                       </widget>
                      </item>
                      <item>
-                      <widget class="QLineEdit" name="regedit_28">
+                      <widget class="QLineEdit" name="regedit_20">
                        <property name="sizePolicy">
                         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                          <horstretch>0</horstretch>
@@ -1025,9 +1025,9 @@
                     </layout>
                    </item>
                    <item>
-                    <layout class="QHBoxLayout" name="regOption_29">
+                    <layout class="QHBoxLayout" name="regOption_21">
                      <item>
-                      <widget class="QLabel" name="reglabel_29">
+                      <widget class="QLabel" name="reglabel_21">
                        <property name="sizePolicy">
                         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                          <horstretch>0</horstretch>
@@ -1045,7 +1045,7 @@
                       </widget>
                      </item>
                      <item>
-                      <widget class="QLineEdit" name="regedit_29">
+                      <widget class="QLineEdit" name="regedit_21">
                        <property name="sizePolicy">
                         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                          <horstretch>0</horstretch>

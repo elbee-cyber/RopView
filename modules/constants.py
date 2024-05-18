@@ -19,6 +19,7 @@ i386 = {
     '[ax','[bx','[cx','[dx','[ah','[al','[bh','[bl','[ch','[cl','[dh','[dl'],
     'sp':['esp'],
     'pc':['eip'],
+    'prestateOpts':['eax','ebx','ecx','edx','esi','edi','ebp'],
     'uregs':{
         'sp':UC_X86_REG_ESP,
         'eax':UC_X86_REG_EAX,
