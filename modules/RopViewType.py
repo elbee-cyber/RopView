@@ -108,9 +108,9 @@ class RopView(QScrollArea, View):
 		if errno == GA_ERR_STACKPIVOT:
 			ga.saved_fails[gadget_str] = 0
 
-		# Handling for Case 3: READ
+		# Handling for Case 4,5,6
 		mappings = details[2]
-		while details[1] == GA_ERR_READ_UNMAPPED:
+		while details[1] == GA_ERR_READ_UNMAPPED or details[1] == UC_ERR_WRITE_UNMAPPED or details[1] == UC_ERR_FETCH_UNMAPPED:
 			ga = GadgetAnalysis(self.binaryView, addr, gadget_str, self.gadget_pool_raw, self.gadget_pool)
 			ga.set_prestate(self.curr_prestate)
 			ga.add_mapping(mappings)

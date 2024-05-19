@@ -162,12 +162,13 @@ class GadgetAnalysis:
 
         # Map static segments the gadget fetches from (if any)
         # Unicorn doesn't let us break segmentation, catch incase of mapping overlap
-        for region in self.segments:
-            try:
-                mu.mem_map(region[1],region[2])
-            except UcError:
-                pass
-            mu.mem_write(region[0],self.bv.read(region[0],4096))
+        if self.segments != None:
+            for region in self.segments:
+                try:
+                    mu.mem_map(region[1],region[2])
+                except UcError:
+                    pass
+                mu.mem_write(region[0],self.bv.read(region[0],4096))
 
         # Step hook to update results with step context
         handle = mu.hook_add(UC_HOOK_CODE, self.analyze_step)
@@ -221,7 +222,7 @@ class GadgetAnalysis:
                 #   - Copys corresponding data from bv into mapped memory
                 # 4. Continue normally
 
-                # Case 3: Read
+                # Case 5: Read
                 if self.err == 0 and e.errno == UC_ERR_READ_UNMAPPED:                       
                     to_map = []
                     for mapping in derefs[0]:
@@ -236,9 +237,47 @@ class GadgetAnalysis:
                         self.err = GA_ERR_READ_UNMAPPED
                         self.err_data = to_map
 
+                # Case 4: Write
                 if self.err == 0 and e.errno == UC_ERR_WRITE_UNMAPPED:
                     # Statically mapped and writable check
-                    pass
+                    to_map = []
+                    for mapping in derefs[0]:
+                        if self.bv.read(mapping,16) == b'':
+                            continue
+                        if self.bv.get_segment_at(mapping).writable == False:
+                            try:
+                                self.results[-1][reg] = 'Write attempt on non-writable memory'
+                            except IndexError:
+                                self.results.append({reg:'Write attempt on non-writable memory'})
+                            continue
+                        to_map.append(self.bvResolve(mapping))
+                    if len(to_map) == 0:
+                        self.err = GA_ERR_UNKNOWN
+                    else:
+                        self.err = GA_ERR_WRITE_UNMAPPED
+                        self.err_data = to_map
+
+                # Case 6: Fetch
+                '''
+                if self.err == 0 and e.errno == UC_ERR_FETCH_UNMAPPED:
+                    # Statically mapped and executable check
+                    to_map = []
+                    for mapping in derefs[0]:
+                        if self.bv.read(mapping,16) == b'':
+                            continue
+                        if self.bv.get_segment_at(mapping).executable == False:
+                            try:
+                                self.results[-1][reg] = 'Attempt to execute non-executable memory'
+                            except IndexError:
+                                self.results.append({reg:'Attempt to execute non-executable memory'})
+                            continue
+                        to_map.append(self.bvResolve(mapping))
+                    if len(to_map) == 0:
+                        self.err = GA_ERR_UNKNOWN
+                    else:
+                        self.err = GA_ERR_FOLLOW_UNMAPPED
+                        self.err_data = to_map
+                '''
 
                 log_info("Unimplemented handling: "+str(e),"Untitled RopView")
         mu.mem_unmap(0x1000,4096*2)
