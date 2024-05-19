@@ -108,6 +108,23 @@ class RopView(QScrollArea, View):
 		if errno == GA_ERR_STACKPIVOT:
 			ga.saved_fails[gadget_str] = 0
 
+		# Handling for Case 3: READ
+		mappings = details[2]
+		while details[1] == GA_ERR_READ_UNMAPPED:
+			ga = GadgetAnalysis(self.binaryView, addr, gadget_str, self.gadget_pool_raw, self.gadget_pool)
+			ga.set_prestate(self.curr_prestate)
+			ga.add_mapping(mappings)
+			details = ga.analyze()
+			ga.emulated[gadget_str] = details[0]
+			ga.instructions = gadget_str.split(';')
+			ga.saved_end_states[gadget_str] = ga.end_state
+			effects = details[0]
+			if details[1] == GA_ERR_READ_UNMAPPED:
+				mappings = mappings + details[2]
+		if errno == GA_ERR_READ_UNMAPPED:
+			ga.segments = []
+			ga.saved_fails[gadget_str] = 0
+
 		# Rename lower-access registers without spaces or brackets
 		for key in list(ga.end_state.keys()):
 			newkey = key.replace(' ','')
@@ -134,7 +151,6 @@ class RopView(QScrollArea, View):
 		beforeLabel.setFont(labelFont)
 		detailPane.addItem(beforeLabel)
 
-		log_info(ga.prestate,"RopView")
 		for key,value in ga.prestate.items():
 			if key in ga.prestate_exclude:
 				continue

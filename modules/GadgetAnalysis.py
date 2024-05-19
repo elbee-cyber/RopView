@@ -45,6 +45,8 @@ class GadgetAnalysis:
         self.prestate = {}
         self.prestate_exclude = []
         self.end_state = {}
+        # If mappings are added, remember to clear this for new gadget context
+        self.segments = []
         index = 0
         for reg in self.registers:
             if reg in gadget_str:
@@ -57,6 +59,12 @@ class GadgetAnalysis:
             index += 1
         self.err = 0
         self.err_data = None
+
+    def add_mapping(self,mappings):
+        '''
+        analyze_gadget will map these extra regions and load the corresponding binary data
+        '''
+        self.segments = mappings
 
     def set_prestate(self, context):
         '''
@@ -152,6 +160,15 @@ class GadgetAnalysis:
         mu.mem_write(0x2100,self.cyclic_data[0])
         mu.reg_write(arch[self.bv_arch]['uregs']['sp'],0x2100)
 
+        # Map static segments the gadget fetches from (if any)
+        # Unicorn doesn't let us break segmentation, catch incase of mapping overlap
+        for region in self.segments:
+            try:
+                mu.mem_map(region[1],region[2])
+            except UcError:
+                pass
+            mu.mem_write(region[0],self.bv.read(region[0],4096))
+
         # Step hook to update results with step context
         handle = mu.hook_add(UC_HOOK_CODE, self.analyze_step)
         try:
@@ -196,12 +213,28 @@ class GadgetAnalysis:
                         except IndexError:
                             self.results.append({reg:'Null dereference'})
 
-                sizes = {'byte':1,'word':2,'dword':4,'qword':8}
-                log_info(derefs, "RopView - derefs")
+                # Mapping Procedure:
+                # 1. Parse virtual address boundaries
+                # 2. Return to caller
+                # 3. Caller calls memmap
+                #   - Maps unicorn memory
+                #   - Copys corresponding data from bv into mapped memory
+                # 4. Continue normally
+
                 # Case 3: Read
                 if self.err == 0 and e.errno == UC_ERR_READ_UNMAPPED:                       
-                    # Statically mapped check
-                    pass
+                    to_map = []
+                    for mapping in derefs[0]:
+                        # Static addr check
+                        if self.bv.read(mapping,16) == b'':
+                            continue
+                        to_map.append(self.bvResolve(mapping))
+                    # Nothing to resolve
+                    if len(to_map) == 0:
+                        self.err = GA_ERR_UNKNOWN
+                    else:
+                        self.err = GA_ERR_READ_UNMAPPED
+                        self.err_data = to_map
 
                 if self.err == 0 and e.errno == UC_ERR_WRITE_UNMAPPED:
                     # Statically mapped and writable check
@@ -210,10 +243,10 @@ class GadgetAnalysis:
                 log_info("Unimplemented handling: "+str(e),"Untitled RopView")
         mu.mem_unmap(0x1000,4096*2)
 
-    def bvResolve(self, addr, size):
+    def bvResolve(self, addr):
         boundary = (addr & ~(4096-1))
-        size = addr-boundary+size
-        return (boundary,size)
+        size = ((addr + 10000) & ~(4096-1))-boundary
+        return (addr, boundary, size)
 
     def parseDerference(self, inst, mu):
         '''
