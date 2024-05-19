@@ -14,42 +14,54 @@ i386 = {
     'controls':[b'\xc3',b'\xc2',b'\xca',b'\xcb'],
     'bitmode':32,
     # Tokens for string parsing
-    'registers':['eax','ebx','ecx','edx','esi','edi','ebp','esp','eip',
+    # List registers by least significant access first
+    'registers':[
     ' ax',' bx',' cx',' dx',' ah',' al',' bh',' bl',' ch',' cl',' dh',' dl',
-    '[ax','[bx','[cx','[dx','[ah','[al','[bh','[bl','[ch','[cl','[dh','[dl'],
+    '[ax','[bx','[cx','[dx','[ah','[al','[bh','[bl','[ch','[cl','[dh','[dl',
+    'eax','ebx','ecx','edx','esi','edi','ebp','esp','eip'
+    ],
     'sp':['esp'],
     'pc':['eip'],
     'prestateOpts':['eax','ebx','ecx','edx','esi','edi','ebp'],
     'uregs':{
         'sp':UC_X86_REG_ESP,
+        'al':UC_X86_REG_AL,
+        'ah':UC_X86_REG_AH,
+        'ax':UC_X86_REG_AX,
         'eax':UC_X86_REG_EAX,
+        'bl':UC_X86_REG_BL,
+        'bh':UC_X86_REG_BH,
+        'bx':UC_X86_REG_BX,
         'ebx':UC_X86_REG_EBX,
+        'cl':UC_X86_REG_CL,
+        'ch':UC_X86_REG_CH,
+        'cx':UC_X86_REG_CX,
         'ecx':UC_X86_REG_ECX,
+        'dl':UC_X86_REG_DL,
+        'dh':UC_X86_REG_DH,
+        'dx':UC_X86_REG_DX,
         'edx':UC_X86_REG_EDX,
         'esi':UC_X86_REG_ESI,
         'edi':UC_X86_REG_EDI,
         'ebp':UC_X86_REG_EBP,
         'esp':UC_X86_REG_ESP,
-        'eip':UC_X86_REG_EIP,
-        'ax':UC_X86_REG_AX,
-        'bx':UC_X86_REG_BX,
-        'cx':UC_X86_REG_CX,
-        'dx':UC_X86_REG_DX,
-        'ah':UC_X86_REG_AH,
-        'al':UC_X86_REG_AL,
-        'bh':UC_X86_REG_BH,
-        'bl':UC_X86_REG_BL,
-        'ch':UC_X86_REG_CH,
-        'cl':UC_X86_REG_CL,
-        'dh':UC_X86_REG_DH,
-        'dl':UC_X86_REG_DL
+        'eip':UC_X86_REG_EIP
+    },
+    'loweraccess':{
+        'eax':[' ax',' ah',' al'],
+        'ebx':[' bx',' bh',' bl'],
+        'ecx':[' cx',' ch',' cl'],
+        'edx':[' dx',' dh',' dl'],
+        'ebp':[' bp'],
+        'esi':[' si'],
+        'edi':[' di']
     }
 }
 
 amd64 = {
     'controls':[b'\xc3',b'\xc2',b'\xca',b'\xcb'],
     'bitmode':64,
-    'registers':['rax','rbx','rcx','rdx','rsi','rdi','rbp','rsp','r8','r9','r10','r11','r12','r13','r14','r15']+i386['registers'],
+    'registers':i386['registers']+['rax','rbx','rcx','rdx','rsi','rdi','rbp','rsp','r8','r9','r10','r11','r12','r13','r14','r15'],
     'sp':['rsp','esp'],
     'pc':['rip','eip'],
     'prestateOpts':['rax','rbx','rcx','rdx','rsi','rdi','rbp','r8','r9','r10','r11','r12','r13','r14','r15'],
@@ -71,6 +83,23 @@ amd64 = {
         'r13':UC_X86_REG_R13,
         'r14':UC_X86_REG_R14,
         'r15':UC_X86_REG_R15,
+    },
+    'loweraccess':{
+        'rax':['eax',' ax',' ah',' al'],
+        'rbx':['ebx',' bx',' bh',' bl'],
+        'rcx':['ecx',' cx',' ch',' cl'],
+        'rdx':['edx',' dx',' dh',' dl'],
+        'rsi':['esi',' si','sil'],
+        'rdi':['edi',' di','dil'],
+        'rbp':['ebp',' bp',' bpl'],
+        'r8':['r8d','r8w','r8b'],
+        'r9':['r9d','r9w','r9b'],
+        'r10':['r10d','r10w','r10b'],
+        'r11':['r11d','r11w','r11b'],
+        'r12':['r12d','r12w','r12b'],
+        'r13':['r13d','r13w','r13b'],
+        'r14':['r14d','r14w','r14b'],
+        'r15':['r15d','r15w','r15b']
     }
 }
 amd64['uregs'].update(i386['uregs'])

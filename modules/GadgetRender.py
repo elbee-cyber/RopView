@@ -95,3 +95,35 @@ class GadgetRender:
         '''
         if self.bad_bytes != []:
             pass
+
+    def buildPrestate(self):
+        '''
+        Builds prestate based on current analysis options
+        '''
+        prestate = {}
+        reg_value = getattr(self.ui,"regedit",-1).text()
+        reg_label = getattr(self.ui,"reglabel",-1).text().replace('=','')
+        prestate[reg_label] = self.translateValue(reg_value)
+        i = 2
+        while reg_label != -1:
+            reg_label = getattr(self.ui,"reglabel_"+str(i),-1)
+            reg_value = getattr(self.ui,"regedit_"+str(i),-1)
+            if reg_label == -1 or reg_value == -1:
+                break
+            prestate[reg_label.text().replace('=','')] = self.translateValue(reg_value.text())
+            i += 1
+        return prestate
+        
+    def translateValue(self,value):
+        '''
+        Translates hex strings
+        '''
+        ret = 0
+        try:
+            if '0x' in value:
+                ret = int(value,16)
+            else:
+                ret = int(value)
+        except ValueError:
+            pass
+        return ret

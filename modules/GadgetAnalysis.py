@@ -11,6 +11,9 @@ class GadgetAnalysis:
     # Cache of already emulated instructions
     emulated = {}
 
+    # Last prestate used
+    last_prestate = {}
+
     # Cache of end states (will be used for searching)
     saved_end_states = {}
 
@@ -39,6 +42,7 @@ class GadgetAnalysis:
         self.bm = int(arch[self.bv_arch]['bitmode']/8)
         self.registers = arch[self.bv_arch]['registers']
         self.prestate = {}
+        self.prestate_exclude = []
         self.end_state = {}
         index = 0
         for reg in self.registers:
@@ -58,10 +62,22 @@ class GadgetAnalysis:
         Configures the prestate register values before emulation. A user can define the values of registers before analysis runs.
         :param context: A dictionary mapping of register values ({reg:value})
         '''
+        # Empty effect caches if prestate changed
+        if context.items() != self.last_prestate.items():
+            self.emulated = {}
+            self.saved_end_states = {}
+            self.saved_fails = {}
+            self.last_prestate = context
         for reg in list(context.keys()):
             if reg in self.gadget_str:
                 reg = reg.replace(' ','')
                 self.prestate[reg] = context[reg]
+            if reg in list(arch[self.bv_arch]['loweraccess'].keys()):
+                for lower in arch[self.bv_arch]['loweraccess'][reg]:
+                    if lower in self.gadget_str:
+                        self.prestate[reg] = context[reg]
+                        if reg not in self.gadget_str:
+                            self.prestate_exclude.append(reg)
 
     def resolve(self, gadget_str, gadget_pool):
         '''
@@ -78,6 +94,7 @@ class GadgetAnalysis:
         '''
         # Gadget already analyzed, return cache value
         if self.gadget_str in self.emulated:
+            log_info("Cached value returned",'RopView')
             self.end_state = self.saved_end_states[self.gadget_str]
             self.err = self.saved_fails[self.gadget_str]
             return (self.emulated[self.gadget_str], self.err, self.err_data)
@@ -124,6 +141,10 @@ class GadgetAnalysis:
         # Set registers according to prestate
         for key,value in self.prestate.items():
             mu.reg_write(arch[self.bv_arch]['uregs'][key],value)
+
+        # Redefine prestate registers for correct display (incase a lower access register was used)
+        for key,value in self.prestate.items():
+            self.prestate[key] = mu.reg_read(arch[self.bv_arch]['uregs'][key])
 
         # Map memory, copy gadget to text and set up stack
         mu.mem_map(0x1000,4096*2)

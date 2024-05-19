@@ -30,15 +30,27 @@ class RopView(QScrollArea, View):
 		self.ui.setupUi(self)
 		
 		# Gadget Pane
-		renderer = GadgetRender(self.binaryView, self.ui)
-		self.gadget_pool = renderer.gs.gadget_pool
-		self.gadget_pool_raw = renderer.gs.gadget_pool_raw
+		self.renderer = GadgetRender(self.binaryView, self.ui)
+		self.gadget_pool = self.renderer.gs.gadget_pool
+		self.gadget_pool_raw = self.renderer.gs.gadget_pool_raw
+		self.curr_prestate = self.renderer.buildPrestate()
 
 		# Slot/signal, double clicking a gadget navigates to linear bv address
 		self.ui.gadgetPane.itemDoubleClicked.connect(self.goto_address)
 		
 		# Slot/signal, navigating gadget search pane populates analysis pane for selected gadget
 		self.ui.gadgetPane.itemSelectionChanged.connect(self.gadgetAnalysis)
+
+		# Add text changed signals to analysis prestate options
+		regedit = getattr(self.ui,"regedit",-1)
+		regedit.textChanged.connect(self.updatePrestate)
+		i = 2
+		while regedit != -1:
+			regedit = getattr(self.ui,"regedit_"+str(i),-1)
+			if regedit == -1:
+				break
+			regedit.textChanged.connect(self.updatePrestate)
+			i += 1
 
 	def goto_address(self, item, column):
 		'''
@@ -52,6 +64,16 @@ class RopView(QScrollArea, View):
 			self.binaryView.navigate('Linear:ELF',addr)
 		except:
 			pass
+
+	def updatePrestate(self):
+		'''
+		Slot for when any prestate option changes values
+		Changes current prestate for future analysis
+		Reanalyzes currently selected gadget
+		'''
+		self.curr_prestate = self.renderer.buildPrestate()
+		if len(self.ui.gadgetPane.selectedItems()) > 0:
+			self.gadgetAnalysis()
 	
 	def gadgetAnalysis(self):
 		'''
@@ -64,6 +86,8 @@ class RopView(QScrollArea, View):
 
 		# Create a new GadgetAnalysis from current context and selected gadget
 		ga = GadgetAnalysis(self.binaryView.arch.name, addr, gadget_str, self.gadget_pool_raw, self.gadget_pool)
+		# Update if prestate context changed
+		ga.set_prestate(self.curr_prestate)
 		details = ga.analyze()
 		effects = details[0]
 		end_state = ga.end_state.copy()
@@ -110,7 +134,10 @@ class RopView(QScrollArea, View):
 		beforeLabel.setFont(labelFont)
 		detailPane.addItem(beforeLabel)
 
+		log_info(ga.prestate,"RopView")
 		for key,value in ga.prestate.items():
+			if key in ga.prestate_exclude:
+				continue
 			item = QListWidgetItem(detailPane)
 			item.setText(key+" = "+hex(value))
 			item.setFont(itemFont)
