@@ -20,7 +20,7 @@ class GadgetAnalysis:
     # Cache of gadgets that fail
     saved_fails = {}
 
-    def __init__(self, bv_arch, addr, gadget_str, gadget_pool_raw, gadget_pool):
+    def __init__(self, bv, addr, gadget_str, gadget_pool_raw, gadget_pool):
         '''
         Sets up new analysis context
         :param bv_arch: A string representing the project arch derived via the Binja api used to resolve constants
@@ -37,7 +37,8 @@ class GadgetAnalysis:
         self.addr = addr
         self.gadget_str = gadget_str
         self.data = gadget_pool_raw[addr]
-        self.bv_arch = bv_arch
+        self.bv_arch = bv.arch.name
+        self.bv = bv
         self.instructions = gadget_str.split(';')
         self.bm = int(arch[self.bv_arch]['bitmode']/8)
         self.registers = arch[self.bv_arch]['registers']
@@ -63,7 +64,7 @@ class GadgetAnalysis:
         :param context: A dictionary mapping of register values ({reg:value})
         '''
         # Empty effect caches if prestate changed
-        if context.items() != self.last_prestate.items():
+        if context != self.last_prestate:
             self.emulated = {}
             self.saved_end_states = {}
             self.saved_fails = {}
@@ -94,7 +95,6 @@ class GadgetAnalysis:
         '''
         # Gadget already analyzed, return cache value
         if self.gadget_str in self.emulated:
-            log_info("Cached value returned",'RopView')
             self.end_state = self.saved_end_states[self.gadget_str]
             self.err = self.saved_fails[self.gadget_str]
             return (self.emulated[self.gadget_str], self.err, self.err_data)
@@ -195,8 +195,25 @@ class GadgetAnalysis:
                             self.results[-1][reg] = 'Null dereference'
                         except IndexError:
                             self.results.append({reg:'Null dereference'})
+
+                sizes = {'byte':1,'word':2,'dword':4,'qword':8}
+                log_info(derefs, "RopView - derefs")
+                # Case 3: Read
+                if self.err == 0 and e.errno == UC_ERR_READ_UNMAPPED:                       
+                    # Statically mapped check
+                    pass
+
+                if self.err == 0 and e.errno == UC_ERR_WRITE_UNMAPPED:
+                    # Statically mapped and writable check
+                    pass
+
                 log_info("Unimplemented handling: "+str(e),"Untitled RopView")
         mu.mem_unmap(0x1000,4096*2)
+
+    def bvResolve(self, addr, size):
+        boundary = (addr & ~(4096-1))
+        size = addr-boundary+size
+        return (boundary,size)
 
     def parseDerference(self, inst, mu):
         '''

@@ -9,6 +9,7 @@ GA_ERR_READ_UNMAPPED = 3
 GA_ERR_WRITE_UNMAPPED = 4
 GA_ERR_DEREF_PC = 5
 GA_NULL_DEREF = 6
+GA_ERR_UNKNOWN = 7
 
 i386 = {
     'controls':[b'\xc3',b'\xc2',b'\xca',b'\xcb'],

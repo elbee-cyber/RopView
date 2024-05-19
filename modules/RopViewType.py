@@ -85,7 +85,7 @@ class RopView(QScrollArea, View):
 		gadget_str = self.ui.gadgetPane.selectedItems()[0].text(1)
 
 		# Create a new GadgetAnalysis from current context and selected gadget
-		ga = GadgetAnalysis(self.binaryView.arch.name, addr, gadget_str, self.gadget_pool_raw, self.gadget_pool)
+		ga = GadgetAnalysis(self.binaryView, addr, gadget_str, self.gadget_pool_raw, self.gadget_pool)
 		# Update if prestate context changed
 		ga.set_prestate(self.curr_prestate)
 		details = ga.analyze()
@@ -97,7 +97,7 @@ class RopView(QScrollArea, View):
 		errno = details[1]
 		while details[1] == GA_ERR_STACKPIVOT:
 			# Create new GadgetAnalysis based on remaining gadget after stack pivot with a precontext of the state before the stack pivot
-			ga = GadgetAnalysis(self.binaryView.arch.name, -1, details[2], self.gadget_pool_raw, self.gadget_pool)
+			ga = GadgetAnalysis(self.binaryView, -1, details[2], self.gadget_pool_raw, self.gadget_pool)
 			ga.set_prestate(end_state)
 			details = ga.analyze()
 			effects = effects + details[0]
