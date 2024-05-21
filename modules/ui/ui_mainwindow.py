@@ -675,6 +675,7 @@ class Ui_Form(object):
 
         self.depthBox = QSpinBox(self.OptionsView)
         self.depthBox.setObjectName(u"depthBox")
+        self.depthBox.setMinimum(1)
         self.depthBox.setValue(16)
 
         self.depthOpt.addWidget(self.depthBox)
@@ -830,7 +831,7 @@ class Ui_Form(object):
 
         self.retranslateUi(Form)
 
-        self.tabWidget.setCurrentIndex(0)
+        self.tabWidget.setCurrentIndex(2)
 
 
         QMetaObject.connectSlotsByName(Form)

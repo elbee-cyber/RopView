@@ -29,6 +29,10 @@ class GadgetRender:
         self.bv = bv
         self.bv_arch = bv.arch.name
 
+        self.ui.badBytesEdit.textChanged.connect(self.prepareBadBytes)
+        self.ui.depthBox.textChanged.connect(self.prepareDepth)
+        self.ui.blockEdit.textChanged.connect(self.prepareBlock)
+
         self.gs = GadgetSearch(bv)
         self.pool_sorted = self.gs.gadget_pool.items()
         self.render_gadgets(self.pool_sorted)
@@ -56,11 +60,8 @@ class GadgetRender:
         Re renders gadget search pane (ui)
         '''
         self.clear_gadgets()
-        # NOTE:
-        # Sorted pool should be a deep copy and not effect the gs pool, the gs pool reference
-        # should be maintained for future sorting.
-        self.sort(pool)
-        self.render_gadgets(pool)
+        res = self.sort(self.gs.gadget_pool.copy()).items()
+        self.render_gadgets(res)
     
     def clear_gadgets(self):
         '''
@@ -93,8 +94,26 @@ class GadgetRender:
         Sorting logic according to options done here. Some options will require a new gadget search be done in (update gs)
         before actual sorting can take place (ei depth)
         '''
+
+        # Bad bytes sort
         if self.bad_bytes != []:
-            pass
+            for b in self.bad_bytes:
+                for addr in list(pool.keys()):
+                    if b in hex(addr):
+                        pool.pop(addr)
+
+        # Hard pnemonic block sort
+        # TODO IMPLEMENT/FIX
+        if self.block != []:
+            try:
+                for insn in self.block:
+                    for key,val in pool.items():
+                        if insn in val:
+                            pool.pop(key)
+            except RuntimeError:
+                pass
+
+        return pool
 
     def buildPrestate(self):
         '''
@@ -127,3 +146,42 @@ class GadgetRender:
         except ValueError:
             pass
         return ret
+
+    def prepareBadBytes(self):
+        '''
+        Bad bytes option slot:
+        - Assigns ui option to class option
+        - update and sort
+        '''
+        self.bad_bytes = []
+        bad = self.ui.badBytesEdit.text().split(',')
+        for b in bad:
+            try:
+                check = int(b,16)
+                self.bad_bytes.append(b.replace('0x',''))
+            except:
+                pass
+        self.update_and_sort()
+
+    def prepareDepth(self):
+        '''
+        Depth option slot:
+        - Reinitializes gadget pool with new depth
+        - update and sort
+        '''
+        dep = int(self.ui.depthBox.text())
+        self.gs = GadgetSearch(self.bv,depth=dep)
+        self.pool_sorted = self.gs.gadget_pool.items()
+        self.update_and_sort()
+
+    def prepareBlock(self):
+        '''
+        Pnemonic block option slot:
+        - Assigns ui option to class option
+        - update and sort
+        '''
+        self.block = []
+        insns = self.ui.blockEdit.text().split(',')
+        for insn in insns:
+            self.block.append(insn)
+        self.update_and_sort()

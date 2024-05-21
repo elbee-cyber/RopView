@@ -6,12 +6,6 @@ class GadgetSearch:
     Discovers ROP gadgets in executable segments of memory.
     """
 
-    # Dict of gadget mnemonics {addr:str}
-    gadget_pool = {}
-
-    # Dict of raw gadgets {addr:bytes}
-    gadget_pool_raw = {}
-
     def __init__(self, bv, depth=16, repeat=False):
         """
         Responsible for gadget searching with applied options. 
@@ -20,6 +14,11 @@ class GadgetSearch:
         :param depth: How many bytes back from a ctrl to save gadgets (instructions on x86 do not have a constant size, special handling required for other archs) (default=11)
         :param repeat: Include duplicate gadgets (default=False)
         """
+        # Dict of gadget mnemonics {addr:str}
+        self.gadget_pool = {}
+
+        # Dict of raw gadgets {addr:bytes}
+        self.gadget_pool_raw = {}
 
         # Start at first address of the loaded binary
         current_addr = bv.start

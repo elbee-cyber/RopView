@@ -94,39 +94,46 @@ class RopView(QScrollArea, View):
 
 		# Handling done via caller in place of recursion because of weird unicorn issues
 		# Handling for Case 1: Stack pivot
-		errno = details[1]
-		while details[1] == GA_ERR_STACKPIVOT:
-			# Create new GadgetAnalysis based on remaining gadget after stack pivot with a precontext of the state before the stack pivot
-			ga = GadgetAnalysis(self.binaryView, -1, details[2], self.gadget_pool_raw, self.gadget_pool)
-			ga.set_prestate(end_state)
-			details = ga.analyze()
-			effects = effects + details[0]
-			ga.emulated[gadget_str] = effects
-			ga.instructions = gadget_str.split(';')
-			ga.end_state = end_state | ga.end_state.copy()
-			ga.saved_end_states[gadget_str] = ga.end_state
-		if errno == GA_ERR_STACKPIVOT:
-			ga.saved_fails[gadget_str] = 0
+		while details[1] == GA_ERR_READ_UNMAPPED or details[1] == GA_ERR_STACKPIVOT or details[1] == GA_ERR_WRITE_UNMAPPED:
+			errno = details[1]
+			while details[1] == GA_ERR_STACKPIVOT:
+				# Create new GadgetAnalysis based on remaining gadget after stack pivot with a precontext of the state before the stack pivot
+				ga = GadgetAnalysis(self.binaryView, -1, details[2], self.gadget_pool_raw, self.gadget_pool)
+				ga.set_prestate(end_state)
+				details = ga.analyze()
+				effects = effects + details[0]
+				ga.emulated[gadget_str] = effects
+				ga.instructions = gadget_str.split(';')
+				ga.end_state = end_state | ga.end_state.copy()
+				ga.saved_end_states[gadget_str] = ga.end_state
+			if errno == GA_ERR_STACKPIVOT:
+				ga.saved_fails[gadget_str] = 0
 
-		# Handling for Case 4,5,6
-		mappings = details[2]
-		while details[1] == GA_ERR_READ_UNMAPPED or details[1] == UC_ERR_WRITE_UNMAPPED or details[1] == UC_ERR_FETCH_UNMAPPED:
-			ga = GadgetAnalysis(self.binaryView, addr, gadget_str, self.gadget_pool_raw, self.gadget_pool)
-			ga.set_prestate(self.curr_prestate)
-			ga.add_mapping(mappings)
-			details = ga.analyze()
-			ga.emulated[gadget_str] = details[0]
-			ga.instructions = gadget_str.split(';')
-			ga.saved_end_states[gadget_str] = ga.end_state
-			effects = details[0]
-			if details[1] == GA_ERR_READ_UNMAPPED:
-				mappings = mappings + details[2]
-		if errno == GA_ERR_READ_UNMAPPED:
-			ga.segments = []
-			ga.saved_fails[gadget_str] = 0
+			# Handling for Case 4,5,6 0x601028
+			mappings = details[2]
+			while details[1] == GA_ERR_READ_UNMAPPED or details[1] == GA_ERR_WRITE_UNMAPPED or details[1] == GA_ERR_FOLLOW_UNMAPPED:
+				ga = GadgetAnalysis(self.binaryView, addr, gadget_str, self.gadget_pool_raw, self.gadget_pool)
+				ga.set_prestate(self.curr_prestate)
+				ga.add_mapping(mappings)
+				if details[1] == GA_ERR_WRITE_UNMAPPED:
+					for map in mappings:
+						ga.track_addr.append(map[0])
+				details = ga.analyze()
+				ga.emulated[gadget_str] = details[0]
+				ga.instructions = gadget_str.split(';')
+				ga.saved_end_states[gadget_str] = ga.end_state
+				effects = details[0]
+				if (details[1] == GA_ERR_READ_UNMAPPED or details[1] == GA_ERR_FOLLOW_UNMAPPED or details[1] == GA_ERR_WRITE_UNMAPPED) and details[2] != None:
+					mappings = mappings + details[2]
+			if errno == GA_ERR_READ_UNMAPPED or errno == UC_ERR_WRITE_UNMAPPED or errno == UC_ERR_FETCH_UNMAPPED:
+				ga.track_addr = []
+				ga.segments = []
+				ga.saved_fails[gadget_str] = 0
 
 		# Rename lower-access registers without spaces or brackets
 		for key in list(ga.end_state.keys()):
+			if '0x' in key:
+				continue
 			newkey = key.replace(' ','')
 			newkey = newkey.replace('[','')
 			ga.end_state[newkey] = ga.end_state.pop(key)
@@ -208,7 +215,12 @@ class RopView(QScrollArea, View):
 			item = QListWidgetItem(detailPane)
 			item.setText("Analysis aborted")
 			item.setFont(itemFont)
+			if len(ga.err_data) > 1:
+				itemBody = QListWidgetItem(detailPane)
+				itemBody.setText("Reason: "+ga.err_data)
+				itemBody.setFont(ga.err_data)
 			detailPane.addItem(item)
+			detailPane.addItem(itemBody)
 			return
 
 		for key,value in ga.end_state.items():
@@ -216,7 +228,10 @@ class RopView(QScrollArea, View):
 			try:
 				item.setText(key+" = "+hex(value))
 			except TypeError:
-				item.setText(key+" = "+value)
+				if '0x' in key:
+					item.setText('*'+key+' = '+value)
+				else:
+					item.setText(key+" = "+value)
 			item.setFont(itemFont)
 			detailPane.addItem(item)
 

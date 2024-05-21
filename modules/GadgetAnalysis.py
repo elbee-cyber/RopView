@@ -47,6 +47,7 @@ class GadgetAnalysis:
         self.end_state = {}
         # If mappings are added, remember to clear this for new gadget context
         self.segments = []
+        self.track_addr = []
         index = 0
         for reg in self.registers:
             if reg in gadget_str:
@@ -60,7 +61,7 @@ class GadgetAnalysis:
         self.err = 0
         self.err_data = None
 
-    def add_mapping(self,mappings):
+    def add_mapping(self, mappings):
         '''
         analyze_gadget will map these extra regions and load the corresponding binary data
         '''
@@ -156,6 +157,8 @@ class GadgetAnalysis:
 
         # Map memory, copy gadget to text and set up stack
         mu.mem_map(0x1000,4096*2)
+        mu.mem_protect(0x1000,4096,UC_PROT_READ+UC_PROT_EXEC)
+        mu.mem_protect(0x2000,4096,UC_PROT_READ+UC_PROT_WRITE)
         mu.mem_write(0x1000,self.data)
         mu.mem_write(0x2100,self.cyclic_data[0])
         mu.reg_write(arch[self.bv_arch]['uregs']['sp'],0x2100)
@@ -196,6 +199,7 @@ class GadgetAnalysis:
                 for pc in arch[self.bv_arch]['pc']:
                     if pc in self.last_executed[1] and self.err == 0:
                         self.err = GA_ERR_DEREF_PC
+                        self.err_data = 'Cannot accurately do analysis with PC without runtime context'
                         try:
                             self.results[-1][pc] = 'Cannot accurately analyze fetches based on PC'
                         except IndexError:
@@ -208,6 +212,7 @@ class GadgetAnalysis:
                 # Case 2: Null deref
                 if 0 in derefs[0] and self.err == 0:
                     self.err = GA_NULL_DEREF
+                    self.err_data = 'Attempt to dereference null pointer'
                     for reg in derefs[1]:
                         try:
                             self.results[-1][reg] = 'Null dereference'
@@ -233,6 +238,7 @@ class GadgetAnalysis:
                     # Nothing to resolve
                     if len(to_map) == 0:
                         self.err = GA_ERR_UNKNOWN
+                        self.err_data = 'Gadget reads from memory not mapped in the binary'
                     else:
                         self.err = GA_ERR_READ_UNMAPPED
                         self.err_data = to_map
@@ -253,36 +259,33 @@ class GadgetAnalysis:
                         to_map.append(self.bvResolve(mapping))
                     if len(to_map) == 0:
                         self.err = GA_ERR_UNKNOWN
+                        self.err_data = 'Gadget writes to memory not mapped in the binary'
                     else:
                         self.err = GA_ERR_WRITE_UNMAPPED
                         self.err_data = to_map
 
                 # Case 6: Fetch
-                '''
                 if self.err == 0 and e.errno == UC_ERR_FETCH_UNMAPPED:
                     # Statically mapped and executable check
-                    to_map = []
-                    for mapping in derefs[0]:
-                        if self.bv.read(mapping,16) == b'':
-                            continue
-                        if self.bv.get_segment_at(mapping).executable == False:
-                            try:
-                                self.results[-1][reg] = 'Attempt to execute non-executable memory'
-                            except IndexError:
-                                self.results.append({reg:'Attempt to execute non-executable memory'})
-                            continue
-                        to_map.append(self.bvResolve(mapping))
-                    if len(to_map) == 0:
-                        self.err = GA_ERR_UNKNOWN
-                    else:
-                        self.err = GA_ERR_FOLLOW_UNMAPPED
-                        self.err_data = to_map
-                '''
+                    self.err = GA_ERR_FOLLOW_UNMAPPED
+                    self.err_data = 'Branch analysis not supported'
 
+                if self.err == 0:
+                    self.err = GA_ERR_UNKNOWN
+                    self.err_data = 'Unknown'
+                
                 log_info("Unimplemented handling: "+str(e),"Untitled RopView")
-        mu.mem_unmap(0x1000,4096*2)
+        
+        for region in mu.mem_regions():
+            mu.mem_unmap(region[0],((region[1]-region[0])+1))
 
     def bvResolve(self, addr):
+        '''
+        Given an address, returns a tuple containing (addr, aligned addr boundary, size)
+        Where addr is the address sent, aligned boundary is the nearest page aligned boundary and size
+        is a size that includes the address and is also page aligned.
+        :return: Returns a tuple of the described.
+        '''
         boundary = (addr & ~(4096-1))
         size = ((addr + 10000) & ~(4096-1))-boundary
         return (addr, boundary, size)
@@ -386,5 +389,8 @@ class GadgetAnalysis:
                     else:
                         # Save register value to step context
                         curr_state[reg] = mu.reg_read(arch[self.bv_arch]['uregs'][reg])
+        if len(self.track_addr) > 0:
+            for addr in self.track_addr:
+                curr_state[hex(addr)] = str(mu.mem_read(addr,8)).replace('bytearray(','').replace(')','')
         self.results.append(curr_state)
         self.count += 1
