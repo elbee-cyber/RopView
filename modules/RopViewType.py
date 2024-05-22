@@ -79,12 +79,18 @@ class RopView(QScrollArea, View):
 		'''
 		Gadget analysis, analysis pane UI and analysis case handling
 		'''
+		if len(self.ui.gadgetPane.selectedItems()) == 0 or self.gadget_pool == {} or self.gadget_pool_raw == {}:
+			self.ui.detailPane.clear()
+			return
+
 		# Address of currently selected gadget
 		addr = int(self.ui.gadgetPane.selectedItems()[0].text(0),16)
 		# Mnemonic of currently selected gadget
 		gadget_str = self.ui.gadgetPane.selectedItems()[0].text(1)
 
 		# Create a new GadgetAnalysis from current context and selected gadget
+		self.gadget_pool = self.renderer.gs.gadget_pool
+		self.gadget_pool_raw = self.renderer.gs.gadget_pool_raw
 		ga = GadgetAnalysis(self.binaryView, addr, gadget_str, self.gadget_pool_raw, self.gadget_pool)
 		# Update if prestate context changed
 		ga.set_prestate(self.curr_prestate)

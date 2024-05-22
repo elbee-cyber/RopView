@@ -12,7 +12,7 @@ GA_NULL_DEREF = 6
 GA_ERR_UNKNOWN = 7
 
 i386 = {
-    'controls':[b'\xc3',b'\xc2',b'\xca',b'\xcb'],
+    'ret':[b'\xc3',b'\xc2',b'\xca',b'\xcb'],
     'bitmode':32,
     # Tokens for string parsing
     # List registers by least significant access first
@@ -48,6 +48,9 @@ i386 = {
         'esp':UC_X86_REG_ESP,
         'eip':UC_X86_REG_EIP
     },
+    'upc':{
+        'eip':UC_X86_REG_EIP
+    },
     'loweraccess':{
         'eax':[' ax',' ah',' al'],
         'ebx':[' bx',' bh',' bl'],
@@ -60,7 +63,9 @@ i386 = {
 }
 
 amd64 = {
-    'controls':[b'\xc3',b'\xc2',b'\xca',b'\xcb'],
+    'ret':[b'\xc3',b'\xc2',b'\xca',b'\xcb'],
+    # jmp rax , jmp rcx , jmp rdx , jmp rbx , jmp rsp , jmp rbp , jmp rsi , jmp rdi , (jmp (r8-r15))
+    'jumps':[b'\xff\xe0',b'\xff\xe1',b'\xff\xe2',b'\xff\xe3',b'\xff\xe4',b'\xff\xe5',b'\xff\xe6',b'\xff\xe7'],
     'bitmode':64,
     'registers':i386['registers']+['rax','rbx','rcx','rdx','rsi','rdi','rbp','rsp','r8','r9','r10','r11','r12','r13','r14','r15'],
     'sp':['rsp','esp'],
@@ -83,7 +88,11 @@ amd64 = {
         'r12':UC_X86_REG_R12,
         'r13':UC_X86_REG_R13,
         'r14':UC_X86_REG_R14,
-        'r15':UC_X86_REG_R15,
+        'r15':UC_X86_REG_R15
+    },
+    'upc':{
+        'rip':UC_X86_REG_RIP,
+        'eip':UC_X86_REG_EIP,
     },
     'loweraccess':{
         'rax':['eax',' ax',' ah',' al'],
@@ -131,7 +140,7 @@ uarch = {
 }
 
 capstone_arch = {
-    'x86':0,
+    'x86':CS_ARCH_X86,
     'x86_64':CS_ARCH_X86,
     'arm32':0,
     'arm64':0
@@ -147,3 +156,5 @@ keystone_arch = {
 def bitmode(arch):
     if '64' in arch:
         return (CS_MODE_64,KS_MODE_64)
+    elif 'x86' in arch:
+        return (CS_MODE_32,KS_MODE_32)

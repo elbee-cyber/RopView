@@ -1,5 +1,5 @@
 from PySide6.QtGui import *
-from PySide6.QtWidgets import QTreeWidgetItem
+from PySide6.QtWidgets import QTreeWidgetItem, QTreeWidgetItemIterator
 from .GadgetSearch import GadgetSearch
 from .constants import *
 from binaryninja import log_info
@@ -8,6 +8,20 @@ class GadgetRender:
     '''
     Responsible for doing gadget search, rendering to UI gadget search pane, 
     connecting option changes and updating the pane based on option changes.
+
+    Options:
+    Bad bytes - Implemented
+    Depth - Implemented
+    Pnemonic blocks - Implemented
+    Address range - Implemented
+    Instruction count - Implemented
+    ROP - Implemented
+    COP
+    JOP
+    Multi branch
+    Duplicates - Implemented
+    Dump
+    Color
     '''
     def __init__(self, bv, ui):
         '''
@@ -16,7 +30,6 @@ class GadgetRender:
         self.bad_bytes = []
         self.depth = 16
         self.block = []
-        self.quality = 0
         self.address_range = []
         self.inst_cnt = 0
         self.rop = True
@@ -32,6 +45,15 @@ class GadgetRender:
         self.ui.badBytesEdit.textChanged.connect(self.prepareBadBytes)
         self.ui.depthBox.textChanged.connect(self.prepareDepth)
         self.ui.blockEdit.textChanged.connect(self.prepareBlock)
+        self.ui.rangeEdit.textChanged.connect(self.prepareRange)
+        self.ui.instCntSpinbox.textChanged.connect(self.prepareInstCnt)
+        self.ui.allOpt.clicked.connect(self.prepareRepeat)
+        self.ui.ropOpt.clicked.connect(self.prepareROP)
+        self.ui.copOpt.clicked.connect(self.prepareCOP)
+        self.ui.jopOpt.clicked.connect(self.prepareJOP)
+        self.ui.multibranchOpt.clicked.connect(self.prepareMultibranch)
+        self.ui.dumpOpt.clicked.connect(self.prepareDump)
+        self.ui.colorOpt.clicked.connect(self.prepareColor)
 
         self.gs = GadgetSearch(bv)
         self.pool_sorted = self.gs.gadget_pool.items()
@@ -58,11 +80,26 @@ class GadgetRender:
         Clears gadget search pane (ui)
         Calls sort (sorts sorted_pool according to options)
         Re renders gadget search pane (ui)
+
+        Dont use recursion
         '''
+        selected = self.ui.gadgetPane.selectedItems()
+        isSelected = len(selected) > 0
+        if isSelected:
+            selected = selected[0].text(1)
         self.clear_gadgets()
         res = self.sort(self.gs.gadget_pool.copy()).items()
         self.render_gadgets(res)
+        if isSelected:
+            self.restore_selected(selected)
     
+    def restore_selected(self,selected):
+        iterator = QTreeWidgetItemIterator(self.ui.gadgetPane)
+        for i in iterator:
+            item = i.value()
+            if item.text(1) == selected:
+                item.setSelected(True)
+
     def clear_gadgets(self):
         '''
         Clears gadgets in search pane
@@ -103,7 +140,6 @@ class GadgetRender:
                         pool.pop(addr)
 
         # Hard pnemonic block sort
-        # TODO IMPLEMENT/FIX
         if self.block != []:
             try:
                 for insn in self.block:
@@ -111,7 +147,25 @@ class GadgetRender:
                         if insn in val:
                             pool.pop(key)
             except RuntimeError:
-                pass
+                pool = self.sort(pool)
+
+        # Address range sort
+        if self.address_range != []:
+            try:
+                for a in list(pool.keys()):
+                    if not (a > self.address_range[0] and a < self.address_range[1]):
+                        pool.pop(a)
+            except RuntimeError:
+                pool = self.sort(pool)
+
+        # Inst cnt
+        if self.inst_cnt != 0:
+            try:
+                for key, val in pool.items():
+                    if len(val.split(';'))-1 > self.inst_cnt:
+                        pool.pop(key)
+            except RuntimeError:
+                pool = self.sort(pool)
 
         return pool
 
@@ -170,7 +224,12 @@ class GadgetRender:
         - update and sort
         '''
         dep = int(self.ui.depthBox.text())
-        self.gs = GadgetSearch(self.bv,depth=dep)
+        include_dup = self.gs.repeat
+        rop = self.gs.rop
+        jop = self.gs.jop
+        cop = self.gs.cop
+        multibranch = self.gs.multibranch
+        self.gs = GadgetSearch(self.bv,depth=dep,repeat=include_dup,rop=rop,jop=jop,cop=cop,multibranch=multibranch)
         self.pool_sorted = self.gs.gadget_pool.items()
         self.update_and_sort()
 
@@ -184,4 +243,83 @@ class GadgetRender:
         insns = self.ui.blockEdit.text().split(',')
         for insn in insns:
             self.block.append(insn)
+        self.block = list(filter(None, self.block))
         self.update_and_sort()
+
+    def prepareRange(self):
+        self.address_range = []
+        addr = self.ui.rangeEdit.text().split('-')
+        try:
+            self.address_range.append(int(addr[0],16))
+            self.address_range.append(int(addr[1],16))
+        except:
+            pass
+        self.update_and_sort()
+
+    def prepareInstCnt(self):
+        self.inst_cnt = 0
+        cnt = int(self.ui.instCntSpinbox.text())
+        if cnt != 0:
+            self.inst_cnt = cnt
+        self.update_and_sort()
+
+    def prepareRepeat(self):
+        include_dup = self.ui.allOpt.isChecked()
+        dep = self.gs.depth
+        rop = self.gs.rop
+        jop = self.gs.jop
+        cop = self.gs.cop
+        multibranch = self.gs.multibranch
+        self.gs = GadgetSearch(self.bv,depth=dep,repeat=include_dup,rop=rop,jop=jop,cop=cop,multibranch=multibranch)
+        self.pool_sorted = self.gs.gadget_pool.items()
+        self.update_and_sort()
+
+    def prepareROP(self):
+        rop = self.ui.ropOpt.isChecked()
+        dep = self.gs.depth
+        include_dup = self.gs.repeat
+        jop = self.gs.jop
+        cop = self.gs.cop
+        multibranch = self.gs.multibranch
+        self.gs = GadgetSearch(self.bv,depth=dep,repeat=include_dup,rop=rop,jop=jop,cop=cop,multibranch=multibranch)
+        self.pool_sorted = self.gs.gadget_pool.items()
+        self.update_and_sort()
+
+    def prepareCOP(self):
+        cop = self.ui.copOpt.isChecked()
+        dep = self.gs.depth
+        include_dup = self.gs.repeat
+        rop = self.gs.rop
+        jop = self.gs.jop
+        multibranch = self.gs.multibranch
+        self.gs = GadgetSearch(self.bv,depth=dep,repeat=include_dup,rop=rop,jop=jop,cop=cop,multibranch=multibranch)
+        self.pool_sorted = self.gs.gadget_pool.items()
+        self.update_and_sort()
+
+    def prepareJOP(self):
+        jop = self.ui.jopOpt.isChecked()
+        dep = self.gs.depth
+        include_dup = self.gs.repeat
+        rop = self.gs.rop
+        cop = self.gs.cop
+        multibranch = self.gs.multibranch
+        self.gs = GadgetSearch(self.bv,depth=dep,repeat=include_dup,rop=rop,jop=jop,cop=cop,multibranch=multibranch)
+        self.pool_sorted = self.gs.gadget_pool.items()
+        self.update_and_sort()
+
+    def prepareMultibranch(self):
+        multibranch = self.ui.multibranchOpt.isChecked()
+        dep = self.gs.depth
+        include_dup = self.gs.repeat
+        rop = self.gs.rop
+        jop = self.gs.jop
+        cop = self.gs.cop
+        self.gs = GadgetSearch(self.bv,depth=dep,repeat=include_dup,rop=rop,jop=jop,cop=cop,multibranch=multibranch)
+        self.pool_sorted = self.gs.gadget_pool.items()
+        self.update_and_sort()
+
+    def prepareDump(self):
+        pass
+
+    def prepareColor(self):
+        pass

@@ -268,14 +268,12 @@ class GadgetAnalysis:
                 if self.err == 0 and e.errno == UC_ERR_FETCH_UNMAPPED:
                     # Statically mapped and executable check
                     self.err = GA_ERR_FOLLOW_UNMAPPED
-                    self.err_data = 'Branch analysis not supported'
+                    self.err_data = 'Branch analysis not supported (Execution continues @ '+hex(mu.reg_read(arch[self.bv_arch]['upc'][arch[self.bv_arch]['pc'][0]]))+')'
 
                 if self.err == 0:
                     self.err = GA_ERR_UNKNOWN
                     self.err_data = 'Unknown'
-                
-                log_info("Unimplemented handling: "+str(e),"Untitled RopView")
-        
+                        
         for region in mu.mem_regions():
             mu.mem_unmap(region[0],((region[1]-region[0])+1))
 
