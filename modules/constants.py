@@ -2,25 +2,45 @@ from capstone import *
 from keystone import *
 from unicorn.unicorn_const import *
 from unicorn.x86_const import *
+from binaryninja import log_info
 
-GA_ERR_STACKPIVOT = 1
-GA_ERR_FOLLOW_UNMAPPED = 2
-GA_ERR_READ_UNMAPPED = 3
-GA_ERR_WRITE_UNMAPPED = 4
-GA_ERR_DEREF_PC = 5
-GA_NULL_DEREF = 6
-GA_ERR_UNKNOWN = 7
+GA_ERR_NULL = 1
+GA_ERR_WRITE = 2
+GA_ERR_READ = 3
+GA_ERR_FETCH = 4
+GA_ERR_READ_UNMAPPED = 5
+GA_ERR_READ_UNRESOLVED = 11
+GA_ERR_WRITE_UNMAPPED = 6
+GA_ERR_WRITE_UNRESOLVED = 12
+GA_ERR_FETCH_UNMAPPED = 7
+GA_ERR_FETCH_UNRESOLVED = 13
+GA_ERR_WRITE_PROT = 8
+GA_ERR_FETCH_PROT = 9
+GA_ERR_READ_PROT = 10
+GA_ERR_UNKNOWN = 14
+
+err_desc = {
+    GA_ERR_NULL:'Null dereference occured',
+    GA_ERR_WRITE:'Invalid write',
+    GA_ERR_READ:'Invalid read',
+    GA_ERR_FETCH:'Invalid fetch',
+    GA_ERR_READ_UNMAPPED:'Attempt to read unmapped memory',
+    GA_ERR_READ_UNRESOLVED:'Error reading from location',
+    GA_ERR_WRITE_UNMAPPED:'Attempt to write to unmapped memory',
+    GA_ERR_WRITE_UNRESOLVED:'Error writing to location',
+    GA_ERR_FETCH_UNMAPPED:'Gadget branching is not supported',
+    GA_ERR_WRITE_PROT:'Attempt to write to non-writable memory',
+    GA_ERR_FETCH_PROT:'Attempt to execute non-executable memory',
+    GA_ERR_READ_PROT:'Attempt to read non-readable memory',
+    GA_ERR_UNKNOWN:'An unknown error stopped analysis'
+}
 
 i386 = {
     'ret':[b'\xc3',b'\xc2',b'\xca',b'\xcb'],
     'bitmode':32,
     # Tokens for string parsing
     # List registers by least significant access first
-    'registers':[
-    ' ax',' bx',' cx',' dx',' ah',' al',' bh',' bl',' ch',' cl',' dh',' dl',
-    '[ax','[bx','[cx','[dx','[ah','[al','[bh','[bl','[ch','[cl','[dh','[dl',
-    'eax','ebx','ecx','edx','esi','edi','ebp','esp','eip'
-    ],
+    'registers':['ax','bx','cx','dx','ah','al','bh','bl','ch','cl','dh','dl','eax','ebx','ecx','edx','esi','edi','ebp'],
     'sp':['esp'],
     'pc':['eip'],
     'prestateOpts':['eax','ebx','ecx','edx','esi','edi','ebp'],
@@ -48,9 +68,7 @@ i386 = {
         'esp':UC_X86_REG_ESP,
         'eip':UC_X86_REG_EIP
     },
-    'upc':{
-        'eip':UC_X86_REG_EIP
-    },
+    'upc':UC_X86_REG_EIP,
     'loweraccess':{
         'eax':[' ax',' ah',' al'],
         'ebx':[' bx',' bh',' bl'],
@@ -67,7 +85,7 @@ amd64 = {
     # jmp rax , jmp rcx , jmp rdx , jmp rbx , jmp rsp , jmp rbp , jmp rsi , jmp rdi , (jmp (r8-r15))
     'jumps':[b'\xff\xe0',b'\xff\xe1',b'\xff\xe2',b'\xff\xe3',b'\xff\xe4',b'\xff\xe5',b'\xff\xe6',b'\xff\xe7'],
     'bitmode':64,
-    'registers':i386['registers']+['rax','rbx','rcx','rdx','rsi','rdi','rbp','rsp','r8','r9','r10','r11','r12','r13','r14','r15'],
+    'registers':i386['registers']+['rax','rbx','rcx','rdx','rsi','rdi','rbp','r8','r9','r10','r11','r12','r13','r14','r15'],
     'sp':['rsp','esp'],
     'pc':['rip','eip'],
     'prestateOpts':['rax','rbx','rcx','rdx','rsi','rdi','rbp','r8','r9','r10','r11','r12','r13','r14','r15'],
@@ -90,10 +108,7 @@ amd64 = {
         'r14':UC_X86_REG_R14,
         'r15':UC_X86_REG_R15
     },
-    'upc':{
-        'rip':UC_X86_REG_RIP,
-        'eip':UC_X86_REG_EIP,
-    },
+    'upc':UC_X86_REG_RIP,
     'loweraccess':{
         'rax':['eax',' ax',' ah',' al'],
         'rbx':['ebx',' bx',' bh',' bl'],
@@ -158,3 +173,6 @@ def bitmode(arch):
         return (CS_MODE_64,KS_MODE_64)
     elif 'x86' in arch:
         return (CS_MODE_32,KS_MODE_32)
+
+def debug_notify(msg):
+    log_info(str(msg),'RopView - Debug')
