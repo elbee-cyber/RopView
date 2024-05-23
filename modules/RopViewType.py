@@ -79,45 +79,22 @@ class RopView(QScrollArea, View):
 		'''
 		Gadget analysis, analysis pane UI and analysis case handling
 		'''
+		if len(self.ui.gadgetPane.selectedItems()) == 0 or self.gadget_pool == {} or self.gadget_pool_raw == {}:
+			self.ui.detailPane.clear()
+			return
+
 		# Address of currently selected gadget
 		addr = int(self.ui.gadgetPane.selectedItems()[0].text(0),16)
 		# Mnemonic of currently selected gadget
 		gadget_str = self.ui.gadgetPane.selectedItems()[0].text(1)
 
 		# Create a new GadgetAnalysis from current context and selected gadget
-		ga = GadgetAnalysis(self.binaryView.arch.name, addr, gadget_str, self.gadget_pool_raw, self.gadget_pool)
-		# Update if prestate context changed
+		self.gadget_pool = self.renderer.gs.gadget_pool
+		self.gadget_pool_raw = self.renderer.gs.gadget_pool_raw
+		ga = GadgetAnalysis(self.binaryView, addr, gadget_str, self.gadget_pool_raw, self.gadget_pool)
 		ga.set_prestate(self.curr_prestate)
-		details = ga.analyze()
-		effects = details[0]
-		end_state = ga.end_state.copy()
+		effects = ga.analyze()[0]
 
-		# Handling done via caller in place of recursion because of weird unicorn issues
-		# Handling for Case 1: Stack pivot
-		errno = details[1]
-		while details[1] == GA_ERR_STACKPIVOT:
-			# Create new GadgetAnalysis based on remaining gadget after stack pivot with a precontext of the state before the stack pivot
-			ga = GadgetAnalysis(self.binaryView.arch.name, -1, details[2], self.gadget_pool_raw, self.gadget_pool)
-			ga.set_prestate(end_state)
-			details = ga.analyze()
-			effects = effects + details[0]
-			ga.emulated[gadget_str] = effects
-			ga.instructions = gadget_str.split(';')
-			ga.end_state = end_state | ga.end_state.copy()
-			ga.saved_end_states[gadget_str] = ga.end_state
-		if errno == GA_ERR_STACKPIVOT:
-			ga.saved_fails[gadget_str] = 0
-
-		# Rename lower-access registers without spaces or brackets
-		for key in list(ga.end_state.keys()):
-			newkey = key.replace(' ','')
-			newkey = newkey.replace('[','')
-			ga.end_state[newkey] = ga.end_state.pop(key)
-		for key in list(ga.prestate.keys()):
-			newkey = key.replace(' ','')
-			newkey = newkey.replace('[','')
-			ga.prestate[newkey] = ga.prestate.pop(key)
-		
 		self.renderAnalysisPane(effects,ga)
 
 	def renderAnalysisPane(self,effects,ga):
@@ -134,28 +111,27 @@ class RopView(QScrollArea, View):
 		beforeLabel.setFont(labelFont)
 		detailPane.addItem(beforeLabel)
 
-		log_info(ga.prestate,"RopView")
-		for key,value in ga.prestate.items():
-			if key in ga.prestate_exclude:
-				continue
+		if ga.used_regs == {}:
 			item = QListWidgetItem(detailPane)
-			item.setText(key+" = "+hex(value))
+			item.setText("No registers to list (gadget doesn't clobber)")
 			item.setFont(itemFont)
 			detailPane.addItem(item)
-
-		# Empty gadget
-		if len(ga.prestate.items()) == 0:
-			item = QListWidgetItem(detailPane)
-			item.setText("Empty gadget")
-			item.setFont(itemFont)
-			detailPane.addItem(item)
+		else:
+			for key,value in ga.used_regs.items():
+				item = QListWidgetItem(detailPane)
+				if 'sp' in key:
+					item.setText(key+" = "+hex(value)+' (emulator stack pointer)')
+				else:
+					item.setText(key+" = "+hex(value))
+				item.setFont(itemFont)
+				detailPane.addItem(item)
 
 		# Instructions
 		i = 0
 		for inst in ga.instructions:
 			space = QListWidgetItem(detailPane)
 			detailPane.addItem(space)
-			if inst == ga.instructions[-2]:
+			if inst == ga.instructions[-1]:
 				break
 			if inst[0] == ' ':
 				inst = inst[1:]
@@ -192,17 +168,36 @@ class RopView(QScrollArea, View):
 			item = QListWidgetItem(detailPane)
 			item.setText("Analysis aborted")
 			item.setFont(itemFont)
+			itemBody = QListWidgetItem(detailPane)
+			reason = err_desc[ga.err]
+			if ga.last_access != []:
+				try:
+					reason += ' (deref: {})'.format(hex(ga.last_access[0]))
+				except:
+					reason += ' (deref: {})'.format(ga.last_access[0])
+			itemBody.setText("Reason: "+reason)
+			itemBody.setFont(itemFont)
 			detailPane.addItem(item)
+			detailPane.addItem(itemBody)
 			return
 
-		for key,value in ga.end_state.items():
+		if ga.end_state == {}:
 			item = QListWidgetItem(detailPane)
-			try:
-				item.setText(key+" = "+hex(value))
-			except TypeError:
-				item.setText(key+" = "+value)
+			item.setText("No registers to list (gadget doesn't clobber)")
 			item.setFont(itemFont)
 			detailPane.addItem(item)
+		else:
+			for key,value in ga.end_state.items():
+				item = QListWidgetItem(detailPane)
+				try:
+					item.setText(key+" = "+hex(value))
+				except TypeError:
+					if '0x' in key:
+						item.setText('*'+key+' = '+value)
+					else:
+						item.setText(key+" = "+value)
+				item.setFont(itemFont)
+				detailPane.addItem(item)
 
 
 	def getCurrentOffset(self):

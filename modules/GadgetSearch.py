@@ -6,13 +6,7 @@ class GadgetSearch:
     Discovers ROP gadgets in executable segments of memory.
     """
 
-    # Dict of gadget mnemonics {addr:str}
-    gadget_pool = {}
-
-    # Dict of raw gadgets {addr:bytes}
-    gadget_pool_raw = {}
-
-    def __init__(self, bv, depth=16, repeat=False):
+    def __init__(self, bv, depth=16, repeat=False, rop=True, jop=True, cop=True, multibranch=False):
         """
         Responsible for gadget searching with applied options. 
         Find all control instructions in executable segments and count back by depth, saving each gadget
@@ -21,11 +15,21 @@ class GadgetSearch:
         :param repeat: Include duplicate gadgets (default=False)
         """
 
-        # Start at first address of the loaded binary
-        current_addr = bv.start
+        # Exposed for renderer access
+        self.rop, self.jop, self.cop, self.repeat, self.depth, self.multibranch = rop, jop, cop, repeat, depth, multibranch
+
+        # Dict of gadget mnemonics {addr:str}
+        self.gadget_pool = {}
+
+        # Dict of raw gadgets {addr:bytes}
+        self.gadget_pool_raw = {}
 
         # Control-flow instructions
-        control_insn = arch[bv.arch.name]['controls']
+        control_insn = []
+        if rop:
+            control_insn += arch[bv.arch.name]['ret']
+        if jop:
+            control_insn += arch[bv.arch.name]['jumps']
 
         # Used to check for duplicates
         used_gadgets = []
@@ -35,6 +39,9 @@ class GadgetSearch:
 
         # Search for all types of OP
         for ctrl in control_insn:
+            # Start at first address of the loaded binary
+            current_addr = bv.start
+
             try:
                 # Current control instruction for search
                 raw = next(md.disasm(ctrl, 0x1000)).mnemonic
@@ -57,18 +64,19 @@ class GadgetSearch:
                         disasm = ''
                         # Current gadget site based on depth
                         current_addr = save-i
-                        insn = bv.read(current_addr,i+1)
+                        insn = bv.read(current_addr,i+len(ctrl))
                         # Save current gadget to disasm
                         for i in md.disasm(insn, 0x1000):
                             if i.op_str == '':
                                 disasm += i.mnemonic + ' ; '
                             else:
                                 disasm += i.mnemonic + ' ' + i.op_str + ' ; '
+
                         # Double gadget case
                         if insn.count(ctrl) > 1:
                             break
                         # No gadget case
-                        if disasm == '' or disasm == ' ' or raw not in disasm:
+                        if disasm == '' or disasm == ' ' or raw[:3] not in disasm:
                             continue
                         # If repeat=False and gadget already found do not save, otherwise stash in used_gadgets
                         if not repeat:
