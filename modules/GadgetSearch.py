@@ -1,5 +1,6 @@
 from binaryninja import *
 from .constants import *
+import re
 
 class GadgetSearch:
     """
@@ -25,11 +26,13 @@ class GadgetSearch:
         self.gadget_pool_raw = {}
 
         # Control-flow instructions
-        control_insn = []
+        control_insn = ()
         if rop:
-            control_insn += arch[bv.arch.name]['ret']
+            control_insn += gadgets[bv.arch.name]['rop']
         if jop:
-            control_insn += arch[bv.arch.name]['jumps']
+            control_insn += gadgets[bv.arch.name]['jop']
+        if cop:
+            control_insn += gadgets[bv.arch.name]['cop']
 
         # Used to check for duplicates
         used_gadgets = []
@@ -37,54 +40,52 @@ class GadgetSearch:
         # Capstone instance used for disassembly
         md = Cs(capstone_arch[bv.arch.name], bitmode(bv.arch.name)[0])
 
-        # Search for all types of OP
         for ctrl in control_insn:
-            # Start at first address of the loaded binary
-            current_addr = bv.start
-
-            try:
-                # Current control instruction for search
-                raw = next(md.disasm(ctrl, 0x1000)).mnemonic
-            except StopIteration:
-                continue
-
-            # if current_addr is None, search complete
-            while current_addr is not None:
-                # Current address of control instruction to analyze
-                current_addr = bv.find_next_data(current_addr,ctrl)
-                if current_addr is None:
+            curr_site = bv.start
+            while curr_site != None:
+                # Find potential gadget site
+                curr_site = bv.find_next_data(curr_site,ctrl[0])
+                if curr_site is None:
                     break
-                # Save the actual gadget site, sub-gadgets are derived via editing in place
-                save = current_addr
-                for i in range(0,depth):
-                    # Make sure potential gadget site is in executable segment
-                    if not bv.get_segment_at(current_addr).executable:
-                        break
-                    else:
-                        disasm = ''
-                        # Current gadget site based on depth
-                        current_addr = save-i
-                        insn = bv.read(current_addr,i+len(ctrl))
-                        # Save current gadget to disasm
-                        for i in md.disasm(insn, 0x1000):
-                            if i.op_str == '':
-                                disasm += i.mnemonic + ' ; '
-                            else:
-                                disasm += i.mnemonic + ' ' + i.op_str + ' ; '
 
-                        # Double gadget case
-                        if insn.count(ctrl) > 1:
+                # Saved to increase after depth search
+                save = curr_site
+
+                # Confirm the gadget site contains the current control instruction
+                if re.match(ctrl[2],bv.read(curr_site,ctrl[1])) != None:
+                    for i in range(0,depth):
+                        if not bv.get_segment_at(curr_site).executable:
                             break
-                        # No gadget case
-                        if disasm == '' or disasm == ' ' or raw[:3] not in disasm:
-                            continue
-                        # If repeat=False and gadget already found do not save, otherwise stash in used_gadgets
-                        if not repeat:
-                            if insn in used_gadgets:
+                        else:
+                            curr_site = save-i
+                            insn = bv.read(curr_site,i+ctrl[1])
+                            disasm = ''
+                            for val in md.disasm(insn,0x1000):
+                                disasm += val.mnemonic + ' ' + val.op_str + ' ; '
+                            disasm = disasm.replace('  ',' ')
+
+                            # Multi-branch check
+                            if not multibranch:
+                                occured = 0
+                                for mnemonic in gadgets[bv.arch.name]['mnemonics']:
+                                    if mnemonic in disasm:
+                                        occured += 1
+                                if occured > 1:
+                                    break
+                            
+                            # Double gadget check
+                            if disasm == '' or disasm == ' ' or ctrl[3] not in disasm:
                                 continue
-                            used_gadgets.append(insn)
-                        # Append found gadget to gadget pool mnemonic and raw
-                        self.gadget_pool[current_addr] = disasm
-                        self.gadget_pool_raw[current_addr] = insn
-                # Prepare start bound for next search
-                current_addr = save+1
+
+                            # Duplicates
+                            if not repeat:
+                                if insn in used_gadgets:
+                                    continue
+                                used_gadgets.append(insn)
+                            
+                            # All checks passed, save to cache
+                            self.gadget_pool[curr_site] = disasm
+                            self.gadget_pool_raw[curr_site] = insn
+
+                # Next address for search
+                curr_site = save+1
