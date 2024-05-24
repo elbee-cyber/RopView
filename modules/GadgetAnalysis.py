@@ -153,7 +153,7 @@ class GadgetAnalysis:
         for state in self.results:
             for key,value in state.items():
                 if value in self._cyclic_data[1]:
-                    self.results[i][key] = 'Full control'
+                    self.results[i][key] = 'Full control (stack)'
             i += 1
     
         # Save in cache
@@ -217,7 +217,8 @@ class GadgetAnalysis:
             return GA_ERR_FETCH_PROT # Attempted executing non-executable memory (%) (No recovery)
         if access == UC_MEM_READ_PROT:
             mappings.insert(0,-1)
-            return GA_ERR_READ_PROT # Attempted reading non-readable memory (%) (No recovery)
+            return GA_ERR_READ_PROT # Attempted reading non-readable memory (%) (No recovery)\
+        mappings.insert(0,-1)
         return GA_ERR_UNKNOWN
 
     def _emulate(self, mu, mappings, start=0x1000):
@@ -254,6 +255,7 @@ class GadgetAnalysis:
 
             # If the last instruction executed was the last instruction to execute, ignore
             if self.last_inst in self.instructions[-1]:
+                debug_notify(self.last_access)
                 self.err = 0
                 return 0
 
@@ -291,7 +293,7 @@ class GadgetAnalysis:
 
         # Save last access for viewtype display
         if address in self._cyclic_data[1]:
-            self.last_access = ['Stack data',value]
+            self.last_access = ['Stack data',self._cyclic_data[1].index(address)]
         else:
             self.last_access = [address,value]
 
@@ -449,14 +451,17 @@ class GadgetAnalysis:
             if reg not in self.clobbered:
                 self.clobbered.append(reg)
 
-        # If last execution cycle an unresolved write (recoverable) occured, add the value of the deref to the diff
+        # If last execution cycle an unresolved write/write (recoverable) occured, add the value of the deref to the diff
         if self.err == GA_ERR_WRITE_UNRESOLVED:
-            diff[hex(self.derefs[-1])] = str(bytes(mu.mem_read(self.derefs[-1],8)))
-
+            self.err = 0
+            diff[hex(self.derefs[-1])] = str(bytes(mu.mem_read(self.derefs[-1],8))) + ' ({})'.format(self.bv.get_sections_at(self.derefs[-1])[0].name)
+        if self.err == GA_ERR_READ_UNRESOLVED:
+            self.err = 0
+            diff['Reads from '+hex(self.derefs[-1])] = str(bytes(mu.mem_read(self.derefs[-1],8))) + ' ({})'.format(self.bv.get_sections_at(self.derefs[-1])[0].name)
         # If the stack pointer is corrupted, add to diff
         if corrupt:
             sp = arch[self._arch]['sp'][0]
-            diff[sp] = 'Stack pivot'
+            diff[sp] = 'Stack pivot (stack)'
             self.clobbered.append(sp)
         
         # Update diff for current step

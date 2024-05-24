@@ -192,12 +192,10 @@ class GadgetRender:
         Translates hex strings
         '''
         ret = 0
+        globs = {"__builtins__": {}}
         try:
-            if '0x' in value:
-                ret = int(value,16)
-            else:
-                ret = int(value)
-        except ValueError:
+            ret = int(eval(value, globs, {}))
+        except:
             pass
         return ret
 

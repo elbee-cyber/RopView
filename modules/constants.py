@@ -129,6 +129,67 @@ amd64 = {
 }
 amd64['uregs'].update(i386['uregs'])
 
+'''
+i386, amd64
+'''
+cop_x86 = (
+	(b'\xff',2,b'\xff[\x10\x11\x12\x13\x16\x17]','call'),					            # call [reg]
+	(b'\xf2\xff',3,b'\xf2\xff[\x10\x11\x12\x13\x16\x17]','call'),				        # bnd call [reg]
+	(b'\xff',2,b'\xff[\xd0\xd1\xd2\xd3\xd4\xd6\xd7]','call'),				            # call reg
+	(b'\xf2\xff',3,b'\xf2\xff[\xd0\xd1\xd2\xd3\xd4\xd6\xd7]','call'),			        # bnd call reg
+	(b'\xff\x14\x24',3,b'\xff\x14\x24','call'),						                    # call [rsp]
+	(b'\xf2\xff\x14\x24',4,b'\xf2\xff[\x14\x24]\x24','call'),				            # bnd call [rsp]
+	(b'\xff\x55\x00',3,b'\xff\x55\x00','call'),						                    # call [rbp]
+	(b'\xf2\xff\x55\x00',4,b'\xf2\xff\x55\x00','call'),					                # bnd call [rbp]
+	(b'\xff',3,b'\xff[\x50-\x53\x55-\x57][\x00-\xff]{1}','call'),				        # call [reg+n]
+	(b'\xf2\xff',4,b'\xf2\xff[\x50-\x53\x55-\x57][\x00-\xff]{1}','call'),	            # bnd call [reg+n]
+	(b'\xff',6,b'\xff[\x90\x91\x92\x93\x94\x96\x97][\x00-\x0ff]{4}','call')		        # call [reg+n]
+)
+
+rop_x86 = (
+	(b'\xc3',1,b'\xc3','ret'),								                            # ret
+	(b'\xc2',3,b'\xc2[\x00-\xff]{2}','ret')							                    # ret n
+)
+
+jop_x86 = (
+	(b'\xff',2,b'\xff[\x20\x21\x22\x23\x26\x27]','jmp'),					            # jmp [reg]
+	(b'\xf2\xff',3,b'\xf2\xff[\x20\x21\x22\x23\x26\x27]','jmp'),				        # bnd jmp [reg]
+	(b'\xff',2,b'\xff[\xe0\xe1\xe2\xe3\xe4\xe6\xe7]','jmp'),				            # jmp reg
+	(b'\xf2\xff',3,b'\xf2\xff[\xe0\xe1\xe2\xe3\xe4\xe6\xe7]','jmp'),			        # bnd jmp reg
+	(b'\xff\x24\x24',3,b'\xff\x24\x24','jmp'),						                    # jmp [rsp]
+	(b'\xf2\xff\x24\x24',4,b'\xf2\xff\x24\x24','jmp'),					                # bnd jmp [rsp]
+	(b'\xff\x65\x00',3,b'\xff\x65\x00','jmp'),						                    # jmp [rbp]
+	(b'\xf2\xff\x65\x00',4,b'\xf2\xff\x65\x00','jmp'),					                # bnd jmp [rbp]
+	(b'\xff',6,b'\xff[\xa0\xa1\xa2\xa3\xa6\xa7][\x00-\x0ff]{4}','jmp'),			        # jmp [reg+n]
+	(b'\xf2\xff',7,b'\xf2\xff[\xa0\xa1\xa2\xa3\xa6\xa7][\x00-\x0ff]{4}','jmp'),         # bnd jmp [reg+n]
+	(b'\xff\xa4\x24',7,b'\xff\xa4\x24[\x00-\xff]{4}','jmp'),				            # jmp [rsp+n]
+	(b'\xf2\xff\xa4\x24',8,b'\xf2\xff\xa4\x24[\x00-\xff]{4}','jmp'),			        # bnd jmp [rsp+n]
+	(b'\xff',3,b'\xff[\x60-\x63\x65-\x67][\x00-\xff]{1}','jmp'),				        # jmp [reg+n]
+	(b'\xf2\xff',4,b'\xf2\xff[\x60-\x63\x65-\x67][\x00-\xff]{1}','jmp')		            # bnd jmp [reg+n]
+)
+
+sys_x86 = (
+	(b'\xcd\x80',2,b'\xcd\x80','int 0x80'),							                    # int 0x80
+	(b'\x0f\x05',2,b'\x0f\x05','syscall'),							                    # syscall
+	(b'\x0f\x34',2,b'\0x0f\x34','sysenter'),						                    # sysenter
+	(b'\x65\xff\x15\x10\x00\x00\x00',7,b'\x65\xff\x15\x10\x00\x00\x00','call gs:[10]')	# call gs:[10]
+)
+
+mnemonics_x86 = ('jmp','call','ret','int','syscall','sysenter')
+
+ctrl_x86 = {
+    "rop":rop_x86,
+    "jop":jop_x86,
+    "cop":cop_x86,
+    "sys":sys_x86,
+    "mnemonics":mnemonics_x86
+}
+
+gadgets = {
+    "x86":ctrl_x86,
+    "x86_64":ctrl_x86
+}
+
 arm32 = {}
 arm64 = {}
 mips = {}

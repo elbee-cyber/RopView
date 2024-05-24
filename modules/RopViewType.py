@@ -199,6 +199,22 @@ class RopView(QScrollArea, View):
 				item.setFont(itemFont)
 				detailPane.addItem(item)
 
+		debug_notify(ga.err)
+		debug_notify(ga.last_access)
+		if ga.err == 0 and ga.last_access != [] and ga.last_access[0] != 0:
+			space = QListWidgetItem(detailPane)
+			detailPane.addItem(space)
+
+			item = QListWidgetItem(detailPane)
+			ret_status = "Gadget returns execution to "
+			if "Stack" in str(ga.last_access[0]):
+				ret_status += "sp+"+str(ga.last_access[1])
+			else:
+				ret_status += hex(ga.last_access[0])
+			item.setText(ret_status)
+			item.setFont(itemFont)
+			detailPane.addItem(item)
+
 
 	def getCurrentOffset(self):
 		return 0
