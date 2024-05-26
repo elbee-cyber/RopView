@@ -20,22 +20,22 @@ class GadgetAnalysis:
     # Cache of gadgets that fail
     saved_fails = {}
 
-    def __init__(self, bv, addr, gadget_str, gadget_pool_raw, gadget_pool):
+    def __init__(self, bv, addr, gadget_str):
         '''
         Sets up new analysis context
         :param bv: A binaryview object
         :param addr: The address of the gadget to analyze
         :param gadget_str: The mnemonic of the gadget to analyze (used to resolve address if addr==-1)
-        :param gadget_pool_raw: The current gadget pool for bytes ({addr:bytes})
-        :param gadget_pool: The current gadget pool for mnemonics ({addr:str})
         '''
 
         self.addr = addr
         self.gadget_str = gadget_str
         self.bv = bv
 
-        # The raw gadget data
-        self._gadget_Raw = gadget_pool_raw[addr]
+        # The gadget asm
+        if addr not in bv.session_data['RopView']['gadget_asm']:
+            return
+        self._gadget_Raw = bv.session_data['RopView']['gadget_asm'][addr]
 
         # Gadget str split by instruction
         self.instructions = gadget_str.split(';')
@@ -153,7 +153,7 @@ class GadgetAnalysis:
         for state in self.results:
             for key,value in state.items():
                 if value in self._cyclic_data[1]:
-                    self.results[i][key] = 'Full control (stack)'
+                    self.results[i][key] = 'Full control (stack) (offset {})'.format(str(int(self._cyclic_data[1].index(value)*self.bm)))
             i += 1
     
         # Save in cache
@@ -255,7 +255,6 @@ class GadgetAnalysis:
 
             # If the last instruction executed was the last instruction to execute, ignore
             if self.last_inst in self.instructions[-1]:
-                debug_notify(self.last_access)
                 self.err = 0
                 return 0
 
@@ -293,7 +292,7 @@ class GadgetAnalysis:
 
         # Save last access for viewtype display
         if address in self._cyclic_data[1]:
-            self.last_access = ['Stack data',self._cyclic_data[1].index(address)]
+            self.last_access = ['Stack data',self._cyclic_data[1].index(address)*self.bm]
         else:
             self.last_access = [address,value]
 
@@ -405,7 +404,6 @@ class GadgetAnalysis:
             return True
         self.__last_addr = stack_val
         return False
-        
 
     def analyze_step(self, mu, address, size, data):
         '''
@@ -466,3 +464,16 @@ class GadgetAnalysis:
         
         # Update diff for current step
         self.results.append(diff)
+
+    def saveState(self):
+        return State(self.results,self.err,self.used_regs,self.instructions,self.prestate,self.last_access,self.end_state)
+
+class State:
+    def __init__(self, results, err, used_regs, instructions, prestate, last_access, end_state):
+        self.results = results
+        self.err = err 
+        self.used_regs = used_regs
+        self.instructions = instructions
+        self.prestate = prestate
+        self.last_access = last_access
+        self.end_state = end_state

@@ -2,7 +2,7 @@ from PySide6.QtGui import *
 from PySide6.QtWidgets import QTreeWidgetItem, QTreeWidgetItemIterator
 from .GadgetSearch import GadgetSearch
 from .constants import *
-from binaryninja import log_info
+from binaryninja import show_message_box
 
 class GadgetRender:
     '''
@@ -16,9 +16,9 @@ class GadgetRender:
     Address range - Implemented
     Instruction count - Implemented
     ROP - Implemented
-    COP
-    JOP
-    Multi branch
+    COP - Implemented
+    JOP - Implemented
+    SYS - Implemented
     Duplicates - Implemented
     Dump
     Color
@@ -41,6 +41,7 @@ class GadgetRender:
         self.ui = ui
         self.bv = bv
         self.bv_arch = bv.arch.name
+        self.__selected = None
 
         self.ui.badBytesEdit.textChanged.connect(self.prepareBadBytes)
         self.ui.depthBox.textChanged.connect(self.prepareDepth)
@@ -51,13 +52,18 @@ class GadgetRender:
         self.ui.ropOpt.clicked.connect(self.prepareROP)
         self.ui.copOpt.clicked.connect(self.prepareCOP)
         self.ui.jopOpt.clicked.connect(self.prepareJOP)
-        self.ui.multibranchOpt.clicked.connect(self.prepareMultibranch)
+        self.ui.sysOpt.clicked.connect(self.preparesys)
         self.ui.dumpOpt.clicked.connect(self.prepareDump)
         self.ui.colorOpt.clicked.connect(self.prepareColor)
+        self.ui.clearCacheButton.clicked.connect(self.clearCache)
+        self.ui.reloadButton.clicked.connect(self.gsearch)
+        self.__selectedItem = None
 
         self.gs = GadgetSearch(bv)
-        self.pool_sorted = self.gs.gadget_pool.items()
-        self.render_gadgets(self.pool_sorted)
+        if bv.session_data['RopView']['loading_canceled']:
+            self.search_canceled()
+
+        self.render_gadgets(bv.session_data['RopView']['gadget_disasm'].items())
 
         # Load the correct register names into the analysis prestate UI (Options tab)
         reg_label = getattr(self.ui,"reglabel",-1)
@@ -78,27 +84,27 @@ class GadgetRender:
     def update_and_sort(self):
         '''
         Clears gadget search pane (ui)
-        Calls sort (sorts sorted_pool according to options)
         Re renders gadget search pane (ui)
 
         Dont use recursion
         '''
-        selected = self.ui.gadgetPane.selectedItems()
-        isSelected = len(selected) > 0
+        self.bv.session_data['RopView']['analysis_enabled'] = False
+        self.__selected = self.ui.gadgetPane.selectedItems()
+        isSelected = len(self.__selected) > 0
         if isSelected:
-            selected = selected[0].text(1)
+            self.__selected = self.__selected[0].text(1)
         self.clear_gadgets()
-        res = self.sort(self.gs.gadget_pool.copy()).items()
+        res = self.sort(self.bv.session_data['RopView']['gadget_disasm'].copy()).items()
         self.render_gadgets(res)
-        if isSelected:
-            self.restore_selected(selected)
-    
-    def restore_selected(self,selected):
-        iterator = QTreeWidgetItemIterator(self.ui.gadgetPane)
-        for i in iterator:
-            item = i.value()
-            if item.text(1) == selected:
-                item.setSelected(True)
+        self.bv.session_data['RopView']['analysis_enabled'] = True
+        self.__selectedItem.setSelected(True)
+
+    def repool(self,dep,include_dup,rop,jop,cop,sys):
+        self.gs = GadgetSearch(self.bv,depth=dep,repeat=include_dup,rop=rop,jop=jop,cop=cop,sys=sys)
+        if self.bv.session_data['RopView']['loading_canceled']:
+            self.search_canceled()
+        else:
+            self.update_and_sort()
 
     def clear_gadgets(self):
         '''
@@ -106,6 +112,15 @@ class GadgetRender:
         '''
         self.ui.statusLabel.setText("")
         self.ui.gadgetPane.clear()
+
+    def search_canceled(self):
+        self.ui.gadgetPane.clear()
+        item = QTreeWidgetItem(self.ui.gadgetPane.topLevelItemCount())
+        item.setText(1,"Loading canceled!")
+        self.ui.gadgetPane.addTopLevelItem(item)
+        item = QTreeWidgetItem(self.ui.gadgetPane.topLevelItemCount())
+        item.setText(1,"Select 'Reload' under options to start gadget loading")
+        self.ui.gadgetPane.addTopLevelItem(item)
 
     def render_gadgets(self,pool):
         '''
@@ -115,6 +130,7 @@ class GadgetRender:
         disasm_color = QBrush(QColor(255, 255, 255, 255))
         font = QFont()
         font.setFamily(u"Hack")
+        found = False
         # Add gadgets to gadget search pane
         self.ui.statusLabel.setText("Gadget count: "+str(len(pool)))
         for addr, text in pool:
@@ -122,6 +138,9 @@ class GadgetRender:
             item.setText(0,hex(addr))
             item.setFont(1,font)
             item.setText(1,text)
+            if text == self.__selected and not found:
+                self.__selectedItem = item
+                found = True
             item.setForeground(0,addr_color)
             item.setForeground(1,disasm_color)
             self.ui.gadgetPane.addTopLevelItem(item)
@@ -226,10 +245,8 @@ class GadgetRender:
         rop = self.gs.rop
         jop = self.gs.jop
         cop = self.gs.cop
-        multibranch = self.gs.multibranch
-        self.gs = GadgetSearch(self.bv,depth=dep,repeat=include_dup,rop=rop,jop=jop,cop=cop,multibranch=multibranch)
-        self.pool_sorted = self.gs.gadget_pool.items()
-        self.update_and_sort()
+        sys = self.gs.sys
+        self.repool(dep,include_dup,rop,jop,cop,sys)
 
     def prepareBlock(self):
         '''
@@ -267,10 +284,8 @@ class GadgetRender:
         rop = self.gs.rop
         jop = self.gs.jop
         cop = self.gs.cop
-        multibranch = self.gs.multibranch
-        self.gs = GadgetSearch(self.bv,depth=dep,repeat=include_dup,rop=rop,jop=jop,cop=cop,multibranch=multibranch)
-        self.pool_sorted = self.gs.gadget_pool.items()
-        self.update_and_sort()
+        sys = self.gs.sys
+        self.repool(dep,include_dup,rop,jop,cop,sys)
 
     def prepareROP(self):
         rop = self.ui.ropOpt.isChecked()
@@ -278,10 +293,8 @@ class GadgetRender:
         include_dup = self.gs.repeat
         jop = self.gs.jop
         cop = self.gs.cop
-        multibranch = self.gs.multibranch
-        self.gs = GadgetSearch(self.bv,depth=dep,repeat=include_dup,rop=rop,jop=jop,cop=cop,multibranch=multibranch)
-        self.pool_sorted = self.gs.gadget_pool.items()
-        self.update_and_sort()
+        sys = self.gs.sys
+        self.repool(dep,include_dup,rop,jop,cop,sys)
 
     def prepareCOP(self):
         cop = self.ui.copOpt.isChecked()
@@ -289,10 +302,8 @@ class GadgetRender:
         include_dup = self.gs.repeat
         rop = self.gs.rop
         jop = self.gs.jop
-        multibranch = self.gs.multibranch
-        self.gs = GadgetSearch(self.bv,depth=dep,repeat=include_dup,rop=rop,jop=jop,cop=cop,multibranch=multibranch)
-        self.pool_sorted = self.gs.gadget_pool.items()
-        self.update_and_sort()
+        sys = self.gs.sys
+        self.repool(dep,include_dup,rop,jop,cop,sys)
 
     def prepareJOP(self):
         jop = self.ui.jopOpt.isChecked()
@@ -300,21 +311,40 @@ class GadgetRender:
         include_dup = self.gs.repeat
         rop = self.gs.rop
         cop = self.gs.cop
-        multibranch = self.gs.multibranch
-        self.gs = GadgetSearch(self.bv,depth=dep,repeat=include_dup,rop=rop,jop=jop,cop=cop,multibranch=multibranch)
-        self.pool_sorted = self.gs.gadget_pool.items()
-        self.update_and_sort()
+        sys = self.gs.sys
+        self.repool(dep,include_dup,rop,jop,cop,sys)
 
-    def prepareMultibranch(self):
-        multibranch = self.ui.multibranchOpt.isChecked()
+    def preparesys(self):
+        sys = self.ui.sysOpt.isChecked()
         dep = self.gs.depth
         include_dup = self.gs.repeat
         rop = self.gs.rop
         jop = self.gs.jop
         cop = self.gs.cop
-        self.gs = GadgetSearch(self.bv,depth=dep,repeat=include_dup,rop=rop,jop=jop,cop=cop,multibranch=multibranch)
-        self.pool_sorted = self.gs.gadget_pool.items()
-        self.update_and_sort()
+        self.repool(dep,include_dup,rop,jop,cop,sys)
+
+    def __clearCache(self):
+        mainthread.execute_on_main_thread_and_wait(self.clearCache)
+
+    def clearCache(self):
+        self.bv.session_data['RopView']['cache']['rop_disasm'] = {}
+        self.bv.session_data['RopView']['cache']['rop_asm'] = {}
+        self.bv.session_data['RopView']['cache']['jop_disasm'] = {}
+        self.bv.session_data['RopView']['cache']['jop_asm'] = {} 
+        self.bv.session_data['RopView']['cache']['cop_disasm'] = {}
+        self.bv.session_data['RopView']['cache']['cop_asm'] = {}
+        self.bv.session_data['RopView']['cache']['sys_disasm'] = {}
+        self.bv.session_data['RopView']['cache']['sys_asm'] = {}
+        show_message_box("Cache cleared","All gadget caches have been flushed")
+
+    def gsearch(self):
+        sys = self.gs.sys
+        dep = self.gs.depth
+        include_dup = self.gs.repeat
+        rop = self.gs.rop
+        jop = self.gs.jop
+        cop = self.gs.cop
+        self.repool(dep,include_dup,rop,jop,cop,sys)
 
     def prepareDump(self):
         pass

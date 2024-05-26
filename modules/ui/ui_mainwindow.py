@@ -124,11 +124,11 @@ class Ui_Form(object):
         self.OptionsView.setAutoFillBackground(True)
         self.verticalLayout_6 = QVBoxLayout(self.OptionsView)
         self.verticalLayout_6.setObjectName(u"verticalLayout_6")
-        self.horizontalLayout_3 = QHBoxLayout()
-        self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
+        self.horizontalLayout_4 = QHBoxLayout()
+        self.horizontalLayout_4.setObjectName(u"horizontalLayout_4")
         self.verticalSpacer_2 = QSpacerItem(255, 508, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
-        self.horizontalLayout_3.addItem(self.verticalSpacer_2)
+        self.horizontalLayout_4.addItem(self.verticalSpacer_2)
 
         self.verticalLayout_4 = QVBoxLayout()
         self.verticalLayout_4.setObjectName(u"verticalLayout_4")
@@ -674,7 +674,7 @@ class Ui_Form(object):
         self.depthBox = QSpinBox(self.OptionsView)
         self.depthBox.setObjectName(u"depthBox")
         self.depthBox.setMinimum(1)
-        self.depthBox.setValue(16)
+        self.depthBox.setValue(10)
 
         self.depthOpt.addWidget(self.depthBox)
 
@@ -702,44 +702,52 @@ class Ui_Form(object):
 
         self.verticalLayout_4.addLayout(self.options1)
 
-        self.horizontalLayout_7 = QHBoxLayout()
-        self.horizontalLayout_7.setObjectName(u"horizontalLayout_7")
+        self.horizontalLayout_3 = QHBoxLayout()
+        self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
         self.clearCacheButton = QPushButton(self.OptionsView)
         self.clearCacheButton.setObjectName(u"clearCacheButton")
         sizePolicy.setHeightForWidth(self.clearCacheButton.sizePolicy().hasHeightForWidth())
         self.clearCacheButton.setSizePolicy(sizePolicy)
         self.clearCacheButton.setAutoExclusive(False)
 
-        self.horizontalLayout_7.addWidget(self.clearCacheButton)
+        self.horizontalLayout_3.addWidget(self.clearCacheButton)
+
+        self.reloadButton = QPushButton(self.OptionsView)
+        self.reloadButton.setObjectName(u"reloadButton")
+        sizePolicy.setHeightForWidth(self.reloadButton.sizePolicy().hasHeightForWidth())
+        self.reloadButton.setSizePolicy(sizePolicy)
+        self.reloadButton.setAutoExclusive(False)
+
+        self.horizontalLayout_3.addWidget(self.reloadButton)
 
         self.rangeLabel = QLabel(self.OptionsView)
         self.rangeLabel.setObjectName(u"rangeLabel")
         self.rangeLabel.setFont(font4)
         self.rangeLabel.setAlignment(Qt.AlignCenter)
 
-        self.horizontalLayout_7.addWidget(self.rangeLabel)
+        self.horizontalLayout_3.addWidget(self.rangeLabel)
 
         self.rangeEdit = QLineEdit(self.OptionsView)
         self.rangeEdit.setObjectName(u"rangeEdit")
         self.rangeEdit.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
 
-        self.horizontalLayout_7.addWidget(self.rangeEdit)
+        self.horizontalLayout_3.addWidget(self.rangeEdit)
 
         self.instcntLabel = QLabel(self.OptionsView)
         self.instcntLabel.setObjectName(u"instcntLabel")
         self.instcntLabel.setFont(font4)
         self.instcntLabel.setAlignment(Qt.AlignCenter)
 
-        self.horizontalLayout_7.addWidget(self.instcntLabel)
+        self.horizontalLayout_3.addWidget(self.instcntLabel)
 
         self.instCntSpinbox = QSpinBox(self.OptionsView)
         self.instCntSpinbox.setObjectName(u"instCntSpinbox")
         self.instCntSpinbox.setValue(0)
 
-        self.horizontalLayout_7.addWidget(self.instCntSpinbox)
+        self.horizontalLayout_3.addWidget(self.instCntSpinbox)
 
 
-        self.verticalLayout_4.addLayout(self.horizontalLayout_7)
+        self.verticalLayout_4.addLayout(self.horizontalLayout_3)
 
         self.horizontalLayout_2 = QHBoxLayout()
         self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
@@ -751,20 +759,21 @@ class Ui_Form(object):
 
         self.jopOpt = QCheckBox(self.OptionsView)
         self.jopOpt.setObjectName(u"jopOpt")
-        self.jopOpt.setChecked(True)
+        self.jopOpt.setChecked(False)
 
         self.horizontalLayout_2.addWidget(self.jopOpt)
 
         self.copOpt = QCheckBox(self.OptionsView)
         self.copOpt.setObjectName(u"copOpt")
-        self.copOpt.setChecked(True)
+        self.copOpt.setChecked(False)
 
         self.horizontalLayout_2.addWidget(self.copOpt)
 
-        self.multibranchOpt = QCheckBox(self.OptionsView)
-        self.multibranchOpt.setObjectName(u"multibranchOpt")
+        self.sysOpt = QCheckBox(self.OptionsView)
+        self.sysOpt.setObjectName(u"sysOpt")
+        self.sysOpt.setChecked(True)
 
-        self.horizontalLayout_2.addWidget(self.multibranchOpt)
+        self.horizontalLayout_2.addWidget(self.sysOpt)
 
         self.allOpt = QCheckBox(self.OptionsView)
         self.allOpt.setObjectName(u"allOpt")
@@ -789,14 +798,14 @@ class Ui_Form(object):
         self.verticalLayout_4.addItem(self.horizontalSpacer_3)
 
 
-        self.horizontalLayout_3.addLayout(self.verticalLayout_4)
+        self.horizontalLayout_4.addLayout(self.verticalLayout_4)
 
         self.verticalSpacer = QSpacerItem(255, 508, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
-        self.horizontalLayout_3.addItem(self.verticalSpacer)
+        self.horizontalLayout_4.addItem(self.verticalSpacer)
 
 
-        self.verticalLayout_6.addLayout(self.horizontalLayout_3)
+        self.verticalLayout_6.addLayout(self.horizontalLayout_4)
 
         self.tabWidget.addTab(self.OptionsView, "")
 
@@ -897,6 +906,10 @@ class Ui_Form(object):
 #endif // QT_CONFIG(tooltip)
         self.clearCacheButton.setText(QCoreApplication.translate("Form", u"Clear cache", None))
 #if QT_CONFIG(tooltip)
+        self.reloadButton.setToolTip(QCoreApplication.translate("Form", u"Start new gadget search", None))
+#endif // QT_CONFIG(tooltip)
+        self.reloadButton.setText(QCoreApplication.translate("Form", u"Reload", None))
+#if QT_CONFIG(tooltip)
         self.rangeLabel.setToolTip(QCoreApplication.translate("Form", u"Only include gadgets in an address range.", None))
 #endif // QT_CONFIG(tooltip)
         self.rangeLabel.setText(QCoreApplication.translate("Form", u"Address range:", None))
@@ -905,11 +918,11 @@ class Ui_Form(object):
 #endif // QT_CONFIG(tooltip)
         self.rangeEdit.setPlaceholderText(QCoreApplication.translate("Form", u"0x??????-0x?????", None))
 #if QT_CONFIG(tooltip)
-        self.instcntLabel.setToolTip(QCoreApplication.translate("Form", u"Only include gadgets with n instructions.", None))
+        self.instcntLabel.setToolTip(QCoreApplication.translate("Form", u"Only include gadgets with n instructions. (Disabled when 0)", None))
 #endif // QT_CONFIG(tooltip)
         self.instcntLabel.setText(QCoreApplication.translate("Form", u"Instruction count:", None))
 #if QT_CONFIG(tooltip)
-        self.instCntSpinbox.setToolTip(QCoreApplication.translate("Form", u"Only include gadgets with n instructions.", None))
+        self.instCntSpinbox.setToolTip(QCoreApplication.translate("Form", u"Only include gadgets with n instructions. (Disabled when 0)", None))
 #endif // QT_CONFIG(tooltip)
 #if QT_CONFIG(tooltip)
         self.ropOpt.setToolTip(QCoreApplication.translate("Form", u"Disable ROP search.", None))
@@ -924,9 +937,9 @@ class Ui_Form(object):
 #endif // QT_CONFIG(tooltip)
         self.copOpt.setText(QCoreApplication.translate("Form", u"COP", None))
 #if QT_CONFIG(tooltip)
-        self.multibranchOpt.setToolTip(QCoreApplication.translate("Form", u"Enable multi-branch gadgets.", None))
+        self.sysOpt.setToolTip(QCoreApplication.translate("Form", u"Disable SYS search", None))
 #endif // QT_CONFIG(tooltip)
-        self.multibranchOpt.setText(QCoreApplication.translate("Form", u"Multi-branch", None))
+        self.sysOpt.setText(QCoreApplication.translate("Form", u"SYS", None))
 #if QT_CONFIG(tooltip)
         self.allOpt.setToolTip(QCoreApplication.translate("Form", u"Include duplicate gadgets.", None))
 #endif // QT_CONFIG(tooltip)
@@ -936,7 +949,7 @@ class Ui_Form(object):
 #endif // QT_CONFIG(tooltip)
         self.dumpOpt.setText(QCoreApplication.translate("Form", u"Dump", None))
 #if QT_CONFIG(tooltip)
-        self.colorOpt.setToolTip(QCoreApplication.translate("Form", u"Output the gadget bytes.", None))
+        self.colorOpt.setToolTip(QCoreApplication.translate("Form", u"Semantically highlight gadgets", None))
 #endif // QT_CONFIG(tooltip)
         self.colorOpt.setText(QCoreApplication.translate("Form", u"Color", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.OptionsView), QCoreApplication.translate("Form", u"Options", None))
