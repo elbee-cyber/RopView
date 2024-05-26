@@ -6,8 +6,10 @@ from PySide6.QtWidgets import QTreeWidgetItem, QScrollArea, QListWidgetItem, QLi
 from .ui.ui_mainwindow import Ui_Form
 from .GadgetAnalysis import GadgetAnalysis
 from .GadgetRender import GadgetRender
+from .SearchFilter import SearchFilter
 from binaryninja import *
 from .constants import *
+import copy
 
 class RopView(QScrollArea, View):
 	'''
@@ -20,6 +22,22 @@ class RopView(QScrollArea, View):
 		:param parent: Super class of Qt UI object
 		:param binaryView: Current binaryview
 		'''
+		# Session data
+		binaryView.session_data['RopView'] = {}
+		binaryView.session_data['RopView']['cache'] = {}
+		binaryView.session_data['RopView']['cache']['rop_disasm'] = {}
+		binaryView.session_data['RopView']['cache']['rop_asm'] = {}
+		binaryView.session_data['RopView']['cache']['jop_disasm'] = {}
+		binaryView.session_data['RopView']['cache']['jop_asm'] = {} 
+		binaryView.session_data['RopView']['cache']['cop_disasm'] = {}
+		binaryView.session_data['RopView']['cache']['cop_asm'] = {}
+		binaryView.session_data['RopView']['cache']['sys_disasm'] = {}
+		binaryView.session_data['RopView']['cache']['sys_asm'] = {}
+		binaryView.session_data['RopView']['cache']['depth'] = 10
+		binaryView.session_data['RopView']['cache']['analysis'] = {}
+		binaryView.session_data['RopView']['loading_canceled'] = False
+		binaryView.session_data['RopView']['analysis_enabled'] = True
+
 		# Base UI
 		QScrollArea.__init__(self, parent)
 		View.__init__(self)
@@ -28,11 +46,12 @@ class RopView(QScrollArea, View):
 		self.binaryView = binaryView
 		self.ui = Ui_Form()
 		self.ui.setupUi(self)
+
+		# Register search filter
+		self.searchfilter = SearchFilter(self.binaryView,self.ui)
 		
 		# Gadget Pane
 		self.renderer = GadgetRender(self.binaryView, self.ui)
-		self.gadget_pool = self.renderer.gs.gadget_pool
-		self.gadget_pool_raw = self.renderer.gs.gadget_pool_raw
 		self.curr_prestate = self.renderer.buildPrestate()
 
 		# Slot/signal, double clicking a gadget navigates to linear bv address
@@ -71,6 +90,7 @@ class RopView(QScrollArea, View):
 		Changes current prestate for future analysis
 		Reanalyzes currently selected gadget
 		'''
+		self.binaryView.session_data['RopView']['cache']['analysis'] = {}
 		self.curr_prestate = self.renderer.buildPrestate()
 		if len(self.ui.gadgetPane.selectedItems()) > 0:
 			self.gadgetAnalysis()
@@ -79,7 +99,10 @@ class RopView(QScrollArea, View):
 		'''
 		Gadget analysis, analysis pane UI and analysis case handling
 		'''
-		if len(self.ui.gadgetPane.selectedItems()) == 0 or self.gadget_pool == {} or self.gadget_pool_raw == {}:
+		if not self.binaryView.session_data['RopView']['analysis_enabled']:
+			return
+
+		if len(self.ui.gadgetPane.selectedItems()) == 0 or self.binaryView.session_data['RopView']['gadget_disasm'] == {} or self.binaryView.session_data['RopView']['gadget_asm'] == {}:
 			self.ui.detailPane.clear()
 			return
 
@@ -88,12 +111,17 @@ class RopView(QScrollArea, View):
 		# Mnemonic of currently selected gadget
 		gadget_str = self.ui.gadgetPane.selectedItems()[0].text(1)
 
-		# Create a new GadgetAnalysis from current context and selected gadget
-		self.gadget_pool = self.renderer.gs.gadget_pool
-		self.gadget_pool_raw = self.renderer.gs.gadget_pool_raw
-		ga = GadgetAnalysis(self.binaryView, addr, gadget_str, self.gadget_pool_raw, self.gadget_pool)
-		ga.set_prestate(self.curr_prestate)
-		effects = ga.analyze()[0]
+		# GadgetAnalysis
+		if addr in self.binaryView.session_data['RopView']['cache']['analysis']:
+			debug_notify("Using cached analysis")
+			ga = self.binaryView.session_data['RopView']['cache']['analysis'][addr]
+			effects = ga.results
+		else:
+			debug_notify("Starting new analysis")
+			ga = GadgetAnalysis(self.binaryView, addr, gadget_str)
+			ga.set_prestate(self.curr_prestate)
+			effects = ga.analyze()[0]
+			self.binaryView.session_data['RopView']['cache']['analysis'][addr] = ga.saveState()
 
 		self.renderAnalysisPane(effects,ga)
 
@@ -199,8 +227,6 @@ class RopView(QScrollArea, View):
 				item.setFont(itemFont)
 				detailPane.addItem(item)
 
-		debug_notify(ga.err)
-		debug_notify(ga.last_access)
 		if ga.err == 0 and ga.last_access != [] and ga.last_access[0] != 0:
 			space = QListWidgetItem(detailPane)
 			detailPane.addItem(space)
