@@ -785,11 +785,6 @@ class Ui_Form(object):
 
         self.horizontalLayout_2.addWidget(self.dumpOpt)
 
-        self.colorOpt = QCheckBox(self.OptionsView)
-        self.colorOpt.setObjectName(u"colorOpt")
-
-        self.horizontalLayout_2.addWidget(self.colorOpt)
-
 
         self.verticalLayout_4.addLayout(self.horizontalLayout_2)
 
@@ -825,7 +820,8 @@ class Ui_Form(object):
         self.lineEdit.setPlaceholderText(QCoreApplication.translate("Form", u"Search filter", None))
         self.statusLabel.setText("")
         ___qtreewidgetitem = self.gadgetPane.headerItem()
-        ___qtreewidgetitem.setText(1, QCoreApplication.translate("Form", u"Gadget", None));
+        ___qtreewidgetitem.setText(2, QCoreApplication.translate("Form", u"Gadget", None));
+        ___qtreewidgetitem.setText(1, QCoreApplication.translate("Form", u"asm", None));
         ___qtreewidgetitem.setText(0, QCoreApplication.translate("Form", u"Location", None));
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.GadgetView), QCoreApplication.translate("Form", u"ROP View", None))
         self.ExportButton.setText(QCoreApplication.translate("Form", u"Export", None))
@@ -948,10 +944,6 @@ class Ui_Form(object):
         self.dumpOpt.setToolTip(QCoreApplication.translate("Form", u"Output the gadget bytes.", None))
 #endif // QT_CONFIG(tooltip)
         self.dumpOpt.setText(QCoreApplication.translate("Form", u"Dump", None))
-#if QT_CONFIG(tooltip)
-        self.colorOpt.setToolTip(QCoreApplication.translate("Form", u"Semantically highlight gadgets", None))
-#endif // QT_CONFIG(tooltip)
-        self.colorOpt.setText(QCoreApplication.translate("Form", u"Color", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.OptionsView), QCoreApplication.translate("Form", u"Options", None))
     # retranslateUi
 

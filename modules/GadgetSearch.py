@@ -118,7 +118,7 @@ class GadgetSearch:
                                 break
                             
                             # Broken gadget check
-                            if disasm == '' or disasm == ' ' or ctrl[3] not in disasm:
+                            if disasm == '' or disasm == ' ' or ctrl[3] not in disasm.split(';')[-2]:
                                 continue
 
                             # Cache (cache should contain ALL gadget sites)
@@ -137,9 +137,9 @@ class GadgetSearch:
 
                             # Duplicates
                             if not self.repeat:
-                                if insn in used_gadgets:
+                                if disasm in used_gadgets:
                                     continue
-                                used_gadgets.append(insn)
+                                used_gadgets.append(disasm)
                             
                             # All checks passed, save to pool
                             self.__bv.session_data['RopView']['gadget_disasm'][curr_site] = disasm

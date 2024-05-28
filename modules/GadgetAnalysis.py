@@ -187,6 +187,9 @@ class GadgetAnalysis:
         if addr == 0:
             mappings.insert(0,-1)
             return GA_ERR_NULL # Null dereference (No recovery)
+        if addr == self.last_access[0] and len(self.derefs) > 12:
+            mappings.insert(0,-1)
+            return GA_ERR_RECURSION
         if access == UC_MEM_WRITE:
             mappings.insert(0,-1)
             return GA_ERR_WRITE # Invalid write of % at % (No recovery)
@@ -199,12 +202,16 @@ class GadgetAnalysis:
         if access == UC_MEM_READ_UNMAPPED:
             if segment == None:
                 mappings.insert(0,-1)
-                return GA_ERR_READ_UNMAPPED # Attempted to read unmapped memory at % (Speculative) (No recovery)
+                return GA_ERR_READ_UNMAPPED # Attempted to read unmapped memory at % (Speculative) (No recovery)'
+            if self.err == GA_ERR_READ_UNRESOLVED:
+                mappings.insert(0,-1)
             return GA_ERR_READ_UNRESOLVED # Attempted to read unmapped memory at % (Realtime resolve)
         if access == UC_MEM_WRITE_UNMAPPED:
             if segment == None:
                 mappings.insert(0,-1)
                 return GA_ERR_WRITE_UNMAPPED # Attempted to write to unmapped memory (% to %) (Speculative) (No recovery)
+            if self.err == GA_ERR_WRITE_UNRESOLVED:
+                mappings.insert(0,-1)
             return GA_ERR_WRITE_UNRESOLVED # Attempted to write unmapped memory at % (Realtime resolve)
         if access == UC_MEM_FETCH_UNMAPPED:
             mappings.insert(0,-1)

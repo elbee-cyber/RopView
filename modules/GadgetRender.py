@@ -3,6 +3,7 @@ from PySide6.QtWidgets import QTreeWidgetItem, QTreeWidgetItemIterator
 from .GadgetSearch import GadgetSearch
 from .constants import *
 from binaryninja import show_message_box
+from PySide6.QtCore import QCoreApplication
 
 class GadgetRender:
     '''
@@ -54,7 +55,6 @@ class GadgetRender:
         self.ui.jopOpt.clicked.connect(self.prepareJOP)
         self.ui.sysOpt.clicked.connect(self.preparesys)
         self.ui.dumpOpt.clicked.connect(self.prepareDump)
-        self.ui.colorOpt.clicked.connect(self.prepareColor)
         self.ui.clearCacheButton.clicked.connect(self.clearCache)
         self.ui.reloadButton.clicked.connect(self.gsearch)
         self.__selectedItem = None
@@ -97,7 +97,8 @@ class GadgetRender:
         res = self.sort(self.bv.session_data['RopView']['gadget_disasm'].copy()).items()
         self.render_gadgets(res)
         self.bv.session_data['RopView']['analysis_enabled'] = True
-        self.__selectedItem.setSelected(True)
+        if self.__selectedItem != None:
+            self.__selectedItem.setSelected(True)
 
     def repool(self,dep,include_dup,rop,jop,cop,sys):
         self.gs = GadgetSearch(self.bv,depth=dep,repeat=include_dup,rop=rop,jop=jop,cop=cop,sys=sys)
@@ -136,14 +137,19 @@ class GadgetRender:
         for addr, text in pool:
             item = QTreeWidgetItem(self.ui.gadgetPane.topLevelItemCount())
             item.setText(0,hex(addr))
-            item.setFont(1,font)
-            item.setText(1,text)
+            item.setFont(2,font)
+            item.setText(2,text)
+            if self.dump:
+                item.setText(1,self.bv.session_data['RopView']['gadget_asm'][addr].hex())
+                item.setForeground(1,QBrush(QColor(136, 136, 145, 255)))
             if text == self.__selected and not found:
                 self.__selectedItem = item
                 found = True
             item.setForeground(0,addr_color)
-            item.setForeground(1,disasm_color)
+            item.setForeground(2,disasm_color)
             self.ui.gadgetPane.addTopLevelItem(item)
+        if not found:
+            self.__selectedItem = None
 
     def sort(self, pool):
         '''
@@ -347,7 +353,10 @@ class GadgetRender:
         self.repool(dep,include_dup,rop,jop,cop,sys)
 
     def prepareDump(self):
-        pass
-
-    def prepareColor(self):
-        pass
+        self.dump = self.ui.dumpOpt.isChecked()
+        if self.dump:
+            self.ui.gadgetPane.showColumn(1)
+        else:
+            self.ui.gadgetPane.hideColumn(1)
+        self.update_and_sort()
+        self.ui.gadgetPane.resizeColumnToContents(1)

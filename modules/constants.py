@@ -18,6 +18,7 @@ GA_ERR_WRITE_PROT = 8
 GA_ERR_FETCH_PROT = 9
 GA_ERR_READ_PROT = 10
 GA_ERR_UNKNOWN = 14
+GA_ERR_RECURSION = 15
 
 err_desc = {
     GA_ERR_NULL:'Null dereference occured',
@@ -32,7 +33,8 @@ err_desc = {
     GA_ERR_WRITE_PROT:'Attempt to write to non-writable memory',
     GA_ERR_FETCH_PROT:'Attempt to execute non-executable memory',
     GA_ERR_READ_PROT:'Attempt to read non-readable memory',
-    GA_ERR_UNKNOWN:'An unknown error stopped analysis'
+    GA_ERR_UNKNOWN:'An unknown error stopped analysis',
+    GA_ERR_RECURSION:'Maximum recursion reached while following dereferences'
 }
 
 i386 = {
@@ -223,7 +225,7 @@ capstone_arch = {
 }
 
 keystone_arch = {
-    'x86':0,
+    'x86':KS_ARCH_X86,
     'x86_64':KS_ARCH_X86,
     'arm32':0,
     'arm64':0

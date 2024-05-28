@@ -143,6 +143,11 @@
           </column>
           <column>
            <property name="text">
+            <string>asm</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
             <string>Gadget</string>
            </property>
           </column>
@@ -1402,16 +1407,6 @@
                </property>
                <property name="text">
                 <string>Dump</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QCheckBox" name="colorOpt">
-               <property name="toolTip">
-                <string>Semantically highlight gadgets</string>
-               </property>
-               <property name="text">
-                <string>Color</string>
                </property>
               </widget>
              </item>
