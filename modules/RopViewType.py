@@ -46,6 +46,8 @@ class RopView(QScrollArea, View):
 		self.binaryView = binaryView
 		self.ui = Ui_Form()
 		self.ui.setupUi(self)
+		self.ui.gadgetPane.hideColumn(1)
+		self.ui.gadgetPane.resizeColumnToContents(2)
 
 		# Register search filter
 		self.searchfilter = SearchFilter(self.binaryView,self.ui)
@@ -58,7 +60,7 @@ class RopView(QScrollArea, View):
 		self.ui.gadgetPane.itemDoubleClicked.connect(self.goto_address)
 		
 		# Slot/signal, navigating gadget search pane populates analysis pane for selected gadget
-		self.ui.gadgetPane.itemSelectionChanged.connect(self.gadgetAnalysis)
+		self.ui.gadgetPane.itemSelectionChanged.connect(self.startAnalysis)
 
 		# Add text changed signals to analysis prestate options
 		regedit = getattr(self.ui,"regedit",-1)
@@ -93,8 +95,11 @@ class RopView(QScrollArea, View):
 		self.binaryView.session_data['RopView']['cache']['analysis'] = {}
 		self.curr_prestate = self.renderer.buildPrestate()
 		if len(self.ui.gadgetPane.selectedItems()) > 0:
-			self.gadgetAnalysis()
+			self.startAnalysis()
 	
+	def startAnalysis(self):
+		mainthread.execute_on_main_thread(self.gadgetAnalysis)
+		
 	def gadgetAnalysis(self):
 		'''
 		Gadget analysis, analysis pane UI and analysis case handling
@@ -109,20 +114,17 @@ class RopView(QScrollArea, View):
 		# Address of currently selected gadget
 		addr = int(self.ui.gadgetPane.selectedItems()[0].text(0),16)
 		# Mnemonic of currently selected gadget
-		gadget_str = self.ui.gadgetPane.selectedItems()[0].text(1)
+		gadget_str = self.ui.gadgetPane.selectedItems()[0].text(2)
 
 		# GadgetAnalysis
 		if addr in self.binaryView.session_data['RopView']['cache']['analysis']:
-			debug_notify("Using cached analysis")
 			ga = self.binaryView.session_data['RopView']['cache']['analysis'][addr]
 			effects = ga.results
 		else:
-			debug_notify("Starting new analysis")
 			ga = GadgetAnalysis(self.binaryView, addr, gadget_str)
 			ga.set_prestate(self.curr_prestate)
 			effects = ga.analyze()[0]
 			self.binaryView.session_data['RopView']['cache']['analysis'][addr] = ga.saveState()
-
 		self.renderAnalysisPane(effects,ga)
 
 	def renderAnalysisPane(self,effects,ga):
