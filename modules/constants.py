@@ -45,6 +45,7 @@ i386 = {
     'registers':['ax','bx','cx','dx','ah','al','bh','bl','ch','cl','dh','dl','eax','ebx','ecx','edx','esi','edi','ebp'],
     'sp':['esp'],
     'pc':['eip'],
+    'stack_pivots':['pop esp'],
     'prestateOpts':['eax','ebx','ecx','edx','esi','edi','ebp'],
     'uregs':{
         'sp':UC_X86_REG_ESP,
@@ -91,6 +92,7 @@ amd64 = {
     'sp':['rsp','esp'],
     'pc':['rip','eip'],
     'prestateOpts':['rax','rbx','rcx','rdx','rsi','rdi','rbp','r8','r9','r10','r11','r12','r13','r14','r15'],
+    'stack_pivots':['pop rsp','pop esp'],
     'uregs':{
         'sp':UC_X86_REG_RSP,
         'rax':UC_X86_REG_RAX,

@@ -48,13 +48,13 @@ class RopView(QScrollArea, View):
 		self.ui.setupUi(self)
 		self.ui.gadgetPane.hideColumn(1)
 		self.ui.gadgetPane.resizeColumnToContents(2)
-
-		# Register search filter
-		self.searchfilter = SearchFilter(self.binaryView,self.ui)
 		
 		# Gadget Pane
 		self.renderer = GadgetRender(self.binaryView, self.ui)
 		self.curr_prestate = self.renderer.buildPrestate()
+
+		# Register search filter
+		self.searchfilter = SearchFilter(self.binaryView,self.ui,self.renderer)
 
 		# Slot/signal, double clicking a gadget navigates to linear bv address
 		self.ui.gadgetPane.itemDoubleClicked.connect(self.goto_address)

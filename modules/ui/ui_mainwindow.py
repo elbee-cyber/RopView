@@ -785,6 +785,23 @@ class Ui_Form(object):
 
         self.horizontalLayout_2.addWidget(self.dumpOpt)
 
+        self.semanticOpt = QHBoxLayout()
+        self.semanticOpt.setObjectName(u"semanticOpt")
+        self.semanticLabel = QLabel(self.OptionsView)
+        self.semanticLabel.setObjectName(u"semanticLabel")
+
+        self.semanticOpt.addWidget(self.semanticLabel)
+
+        self.semanticBox = QSpinBox(self.OptionsView)
+        self.semanticBox.setObjectName(u"semanticBox")
+        self.semanticBox.setMaximum(500)
+        self.semanticBox.setValue(50)
+
+        self.semanticOpt.addWidget(self.semanticBox)
+
+
+        self.horizontalLayout_2.addLayout(self.semanticOpt)
+
 
         self.verticalLayout_4.addLayout(self.horizontalLayout_2)
 
@@ -944,6 +961,13 @@ class Ui_Form(object):
         self.dumpOpt.setToolTip(QCoreApplication.translate("Form", u"Output the gadget bytes.", None))
 #endif // QT_CONFIG(tooltip)
         self.dumpOpt.setText(QCoreApplication.translate("Form", u"Dump", None))
+#if QT_CONFIG(tooltip)
+        self.semanticLabel.setToolTip(QCoreApplication.translate("Form", u"The maximum amount of semantic results to return from a search", None))
+#endif // QT_CONFIG(tooltip)
+        self.semanticLabel.setText(QCoreApplication.translate("Form", u"Semantic results limit", None))
+#if QT_CONFIG(tooltip)
+        self.semanticBox.setToolTip(QCoreApplication.translate("Form", u"The maximum amount of semantic results to return from a search", None))
+#endif // QT_CONFIG(tooltip)
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.OptionsView), QCoreApplication.translate("Form", u"Options", None))
     # retranslateUi
 
