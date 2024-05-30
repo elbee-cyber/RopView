@@ -4,6 +4,7 @@ from unicorn.unicorn_const import *
 from unicorn.x86_const import *
 from binaryninja import log_info
 
+# ERR
 GA_ERR_NULL = 1
 GA_ERR_WRITE = 2
 GA_ERR_READ = 3
@@ -19,6 +20,10 @@ GA_ERR_FETCH_PROT = 9
 GA_ERR_READ_PROT = 10
 GA_ERR_UNKNOWN = 14
 GA_ERR_RECURSION = 15
+
+# SENTINELS
+REG_NOT_ANALYZED = 0xdeadcafebeefbabe
+REG_CONTROLLED = 0xcafedeadbabebeef
 
 err_desc = {
     GA_ERR_NULL:'Null dereference occured',
