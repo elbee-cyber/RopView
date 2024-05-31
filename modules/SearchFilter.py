@@ -149,7 +149,7 @@ class SearchFilter:
         df = self.attemptQuery(self.__semanticQuery)
 
         # Prevent exhaustion
-        limit = 200
+        limit = 300
 
         # GadgetAnalysis
         for addr in search_space:
