@@ -749,6 +749,18 @@ class Ui_Form(object):
 
         self.horizontalLayout_3.addWidget(self.rangeEdit)
 
+        self.label_4 = QLabel(self.OptionsView)
+        self.label_4.setObjectName(u"label_4")
+
+        self.horizontalLayout_3.addWidget(self.label_4)
+
+        self.semanticBox = QSpinBox(self.OptionsView)
+        self.semanticBox.setObjectName(u"semanticBox")
+        self.semanticBox.setMaximum(2000)
+        self.semanticBox.setValue(1000)
+
+        self.horizontalLayout_3.addWidget(self.semanticBox)
+
         self.instcntLabel = QLabel(self.OptionsView)
         self.instcntLabel.setObjectName(u"instcntLabel")
         self.instcntLabel.setFont(font4)
@@ -945,6 +957,13 @@ class Ui_Form(object):
         self.rangeEdit.setToolTip(QCoreApplication.translate("Form", u"Only include gadgets in an address range.", None))
 #endif // QT_CONFIG(tooltip)
         self.rangeEdit.setPlaceholderText(QCoreApplication.translate("Form", u"0x??????-0x?????", None))
+#if QT_CONFIG(tooltip)
+        self.label_4.setToolTip(QCoreApplication.translate("Form", u"The depth semantic search uses to limit exhaustion", None))
+#endif // QT_CONFIG(tooltip)
+        self.label_4.setText(QCoreApplication.translate("Form", u"Semantic depth:", None))
+#if QT_CONFIG(tooltip)
+        self.semanticBox.setToolTip(QCoreApplication.translate("Form", u"The depth semantic search uses to limit exhaustion", None))
+#endif // QT_CONFIG(tooltip)
 #if QT_CONFIG(tooltip)
         self.instcntLabel.setToolTip(QCoreApplication.translate("Form", u"Only include gadgets with n instructions. (Disabled when 0)", None))
 #endif // QT_CONFIG(tooltip)

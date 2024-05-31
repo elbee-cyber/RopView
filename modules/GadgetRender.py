@@ -4,6 +4,7 @@ from .GadgetSearch import GadgetSearch
 from .constants import *
 from binaryninja import show_message_box, run_progress_dialog, get_save_filename_input
 from PySide6.QtCore import QCoreApplication
+from .SearchFilter import SearchFilter
 
 class GadgetRender:
     '''
@@ -61,8 +62,10 @@ class GadgetRender:
         self.__selectedItem = None
 
         self.gs = GadgetSearch(bv)
-
-        self.gsearch()
+        if self.bv.session_data['RopView']['loading_canceled']:
+            self.search_canceled()
+        else:
+            self.update_and_sort()
 
         # Load the correct register names into the analysis prestate UI (Options tab)
         reg_label = getattr(self.ui,"reglabel",-1)
@@ -104,7 +107,10 @@ class GadgetRender:
 
     def repool(self,dep,rop,jop,cop,sys):
         self.gs = GadgetSearch(self.bv,depth=dep,rop=rop,jop=jop,cop=cop,sys=sys)
-        self.update_and_sort()
+        if self.bv.session_data['RopView']['loading_canceled']:
+            self.search_canceled()
+        else:
+            self.update_and_sort()
 
     def clear_gadgets(self):
         '''
@@ -115,12 +121,8 @@ class GadgetRender:
 
     def search_canceled(self):
         self.ui.gadgetPane.clear()
-        item = QTreeWidgetItem(self.ui.gadgetPane.topLevelItemCount())
-        item.setText(1,"Loading canceled!")
-        self.ui.gadgetPane.addTopLevelItem(item)
-        item = QTreeWidgetItem(self.ui.gadgetPane.topLevelItemCount())
-        item.setText(1,"Select 'Reload' under options to start gadget loading")
-        self.ui.gadgetPane.addTopLevelItem(item)
+        self.ui.resultsLabel.setText("Gadget search canceled, reload pool in options")
+        self.ui.resultsLabel.setStyleSheet("QLabel { color : red; }")
 
     def render_gadgets(self,pool):
         '''
@@ -364,6 +366,7 @@ class GadgetRender:
         jop = self.gs.jop
         cop = self.gs.cop
         self.repool(dep,rop,jop,cop,sys)
+        
 
     def prepareDump(self):
         self.dump = self.ui.dumpOpt.isChecked()

@@ -2,7 +2,7 @@ from .constants import *
 from .GadgetSearch import *
 from .GadgetAnalysis import *
 import pandas as pd
-import re
+import re,random,gc
 
 class SearchFilter:
 
@@ -64,6 +64,15 @@ class SearchFilter:
                 query = query.replace('execve',arch[self.bv.arch.name]['execve'])
             except:
                 show_message_box("Preset does not exist","{} preset does not exist for {}".format('execve',self.bv.arch.name))
+
+        # jmp_reg
+        if 'jmp_reg' in query:
+            preset = "("
+            for reg in arch[self.bv.arch.name]['prestateOpts']:
+                preset += "disasm.str.contains('jmp {}') or ".format(reg)
+            preset = preset[:-4]+")"
+            query = preset
+            
 
         # Space mismatching
         query = query.replace(' =','=')
@@ -145,19 +154,29 @@ class SearchFilter:
             include += "disasm.str.contains('"+reg+"') or "
         search_space = self.attemptQuery(include[:-4])
         search_space_len = len(search_space)
-
-        df = self.attemptQuery(self.__semanticQuery)
+        random.shuffle(search_space)
 
         # Prevent exhaustion
-        limit = 300
+        limit = int(self.ui.semanticBox.text())
 
         # GadgetAnalysis
         for addr in search_space:
+
             if cnt > limit:
                 break
-            if not update(cnt*(len(df)+1)*len(self.__semanticRegs),search_space_len):
+
+            if not update(cnt,limit):
                 break
             cnt += 1
+
+            contains_interrupt = False
+            for interrupt in arch[self.bv.arch.name]['blacklist']:
+                if interrupt in self.bv.session_data['RopView']['gadget_disasm'][addr]:
+                    contains_interrupt = True
+                    break
+            if contains_interrupt:
+                continue
+
             # Populate [regs]
             if addr in self.bv.session_data['RopView']['cache']['analysis']:
                 reg_vals = self.bv.session_data['RopView']['cache']['analysis'][addr].end_state
@@ -170,6 +189,7 @@ class SearchFilter:
                     break
                 reg_vals = ga.end_state
                 self.bv.session_data['RopView']['cache']['analysis'][addr] = ga.saveState()
+                del ga
 
             contains_used = False
             for reg in self.__semanticRegs:
@@ -190,8 +210,7 @@ class SearchFilter:
                     self.full_df.loc[self.full_df['addr'] == addr, reg] = REG_CONTROLLED
                 else:
                     self.full_df.loc[self.full_df['addr'] == addr, reg] = val
-
-            df = self.attemptQuery(self.__semanticQuery)
+            del reg_vals
 
     def attemptQuery(self,query):
         results = []

@@ -20,6 +20,7 @@ GA_ERR_FETCH_PROT = 9
 GA_ERR_READ_PROT = 10
 GA_ERR_UNKNOWN = 14
 GA_ERR_RECURSION = 15
+GA_ERR_INTR = 16
 
 # SENTINELS
 REG_NOT_ANALYZED = 0xdeadcafebeefbabe
@@ -39,7 +40,8 @@ err_desc = {
     GA_ERR_FETCH_PROT:'Attempt to execute non-executable memory',
     GA_ERR_READ_PROT:'Attempt to read non-readable memory',
     GA_ERR_UNKNOWN:'An unknown error stopped analysis',
-    GA_ERR_RECURSION:'Maximum recursion reached while following dereferences'
+    GA_ERR_RECURSION:'Maximum recursion reached while following dereferences',
+    GA_ERR_INTR:'Interrupts cannot be emulated by analysis'
 }
 
 i386 = {
@@ -52,6 +54,7 @@ i386 = {
     'pc':['eip'],
     'stack_pivots':['pop esp'],
     'prestateOpts':['eax','ebx','ecx','edx','esi','edi','ebp'],
+    'blacklist':['int1', 'int3','int 1','int 3','loop','xmm','zmm','ymm'],
     'uregs':{
         'sp':UC_X86_REG_ESP,
         'al':UC_X86_REG_AL,
@@ -98,7 +101,8 @@ amd64 = {
     'pc':['rip','eip'],
     'prestateOpts':['rax','rbx','rcx','rdx','rsi','rdi','rbp','r8','r9','r10','r11','r12','r13','r14','r15'],
     'stack_pivots':['pop rsp','pop esp'],
-    'execve':"(rax==0x3b or rsi==0 or rdx==0 or rdi==0xdeadbeef) or (disasm.str.contains('syscall') and inst_cnt==1) or ((disasm.str.contains('pop rax') or disasm.str.contains('pop rsi') or disasm.str.contains('pop rdx') or disasm.str.contains('pop rdi')) and inst_cnt<4)",
+    'execve':"(rax==0x3b or rsi==0 or rdx==0 or rdi==0xdeadbeef) or (disasm.str.contains('syscall') and inst_cnt==1) or ((disasm.str.contains('pop rax') or disasm.str.contains('pop rsi') or disasm.str.contains('pop rdx') or disasm.str.contains('pop rdi')) and inst_cnt<4) and disasm.has('ret ; ')",
+    'blacklist':['int1','int3','int 1','int 3','loop','ymm','zmm','xmm'],
     'uregs':{
         'sp':UC_X86_REG_RSP,
         'rax':UC_X86_REG_RAX,
@@ -185,7 +189,7 @@ sys_x86 = (
 	(b'\x65\xff\x15\x10\x00\x00\x00',7,b'\x65\xff\x15\x10\x00\x00\x00','call gs:[10]')	# call gs:[10]
 )
 
-mnemonics_x86 = ('jmp','call','ret')
+mnemonics_x86 = ('jmp','call','ret','retf')
 
 ctrl_x86 = {
     "rop":rop_x86,

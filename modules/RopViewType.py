@@ -36,6 +36,7 @@ class RopView(QScrollArea, View):
 		binaryView.session_data['RopView']['cache']['depth'] = 10
 		binaryView.session_data['RopView']['cache']['analysis'] = {}
 		binaryView.session_data['RopView']['analysis_enabled'] = True
+		binaryView.session_data['RopView']['search_initialized'] = False
 
 		# Base UI
 		QScrollArea.__init__(self, parent)
@@ -52,11 +53,14 @@ class RopView(QScrollArea, View):
 		self.renderer = GadgetRender(self.binaryView, self.ui)
 		self.curr_prestate = self.renderer.buildPrestate()
 
-		# Register search filter
-		self.searchfilter = SearchFilter(self.binaryView,self.ui,self.renderer)
+		# Search
+		self.searchfilter = None
 
 		# Slot/signal, double clicking a gadget navigates to linear bv address
 		self.ui.gadgetPane.itemDoubleClicked.connect(self.goto_address)
+
+		# Render
+		self.ui.lineEdit.returnPressed.connect(self.querySetup)
 		
 		# Slot/signal, navigating gadget search pane populates analysis pane for selected gadget
 		self.ui.gadgetPane.itemSelectionChanged.connect(self.startAnalysis)
@@ -98,6 +102,12 @@ class RopView(QScrollArea, View):
 	
 	def startAnalysis(self):
 		mainthread.execute_on_main_thread(self.gadgetAnalysis)
+
+	def querySetup(self):
+		if len(self.binaryView.session_data['RopView']['gadget_disasm']) > 0 and self.searchfilter == None:
+			self.searchfilter = SearchFilter(self.binaryView,self.ui,self.renderer)
+			self.ui.semanticBox.setMaximum(len(self.binaryView.session_data['RopView']['gadget_disasm']))
+			self.searchfilter.query()
 		
 	def gadgetAnalysis(self):
 		'''

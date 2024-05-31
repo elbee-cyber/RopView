@@ -3,7 +3,8 @@
   "name": "Untitled",
   "type": [
     "binaryview",
-    "helper"
+    "helper",
+    "ui"
   ],
   "api": [
     "python3"

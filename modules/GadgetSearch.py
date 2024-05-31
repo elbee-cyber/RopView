@@ -1,6 +1,6 @@
-from binaryninja import *
 from .constants import *
 import re
+from binaryninja import *
 
 class GadgetSearch:
     """
@@ -57,7 +57,7 @@ class GadgetSearch:
         bv.session_data['RopView']['cache']['depth'] = depth
 
         # Start gadget search, return success
-        bv.session_data['RopView']['loading_canceled'] =  run_progress_dialog("Loading gadgets",False,self.loadGadgets)
+        bv.session_data['RopView']['loading_canceled'] = not run_progress_dialog("Loading gadgets",True,self.loadGadgets)
 
     def loadGadgets(self,update):
         # Capstone instance used for disassembly
@@ -91,7 +91,7 @@ class GadgetSearch:
                 if update(curr,full) == False:
                     self.__bv.session_data['RopView']['gadget_disasm'] = {}
                     self.__bv.session_data['RopView']['gadget_asm'] = {}
-                    mainthread.execute_on_main_thread_and_wait(self.empty_cache())
+                    self.empty_cache()
                     return False
 
                 # Confirm the gadget site contains the current control instruction
@@ -108,11 +108,20 @@ class GadgetSearch:
                                 disasm += val.mnemonic + ' ' + val.op_str + ' ; '
                             disasm = disasm.replace('  ',' ')
 
+                            # Check blacklisted interrupts
+                            contains_block = False
+                            for block in arch[self.__bv.arch.name]['blacklist']:
+                                if block in disasm:
+                                    contains_block = True
+                                    break
+                            if contains_block:
+                                continue
+
                             # Double gadget check
                             occured = 0
                             for mnemonic in gadgets[self.__bv.arch.name]['mnemonics']:
                                 if mnemonic in disasm:
-                                    occured += 1
+                                    occured += disasm.count(mnemonic)
                             if occured > 1:
                                 break
                             

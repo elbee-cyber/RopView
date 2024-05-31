@@ -140,10 +140,17 @@ class GadgetAnalysis:
         self.__last_addr = 0x2100
 
         # Add hook for step analysis
-        mu.hook_add(UC_HOOK_CODE, self.analyze_step)
+        ch = mu.hook_add(UC_HOOK_CODE, self.analyze_step)
+
+        # Add hook to handle interrupts/syscalls
+        hi = mu.hook_add(UC_HOOK_INTR, self.__hook_intr)
 
         # Emulate and analyze
         self._emulate(mu, mappings)
+
+        # Hook del
+        mu.hook_del(ch)
+        mu.hook_del(hi)
 
         # Unmap all unicorn regions
         self._uc_release(mu)
@@ -254,11 +261,18 @@ class GadgetAnalysis:
             # Attempt emulation
             mu.emu_start(start,0x1000+len(self._gadget_Raw),count=self.inst_cnt)
             mu.hook_del(h)
-            self.err = 0
+            if self.err == GA_ERR_INTR:
+                self.err = GA_ERR_INTR
+            else:
+                self.err = 0
             return 0
         except UcError as e:
             # A memory violation occured
             mu.hook_del(h)
+
+            if self.err == GA_ERR_INTR:
+                mappings.insert(0,-1)
+                return 0
 
             # If the last instruction executed was the last instruction to execute, ignore
             if self.last_inst in self.instructions[-1]:
@@ -283,6 +297,11 @@ class GadgetAnalysis:
         '''
         for region in uc.mem_regions():
             uc.mem_unmap(region[0],((region[1]-region[0])+1))
+
+    def __hook_intr(self, uc, intro, foobar):
+        self.err = GA_ERR_INTR
+        self._uc_release(uc)
+        uc.emu_stop()
 
     def hook_mem_invalid(self, uc, access, address, size, value, mappings):
         '''
