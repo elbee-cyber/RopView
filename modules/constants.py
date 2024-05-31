@@ -4,6 +4,7 @@ from unicorn.unicorn_const import *
 from unicorn.x86_const import *
 from binaryninja import log_info
 
+# ERR
 GA_ERR_NULL = 1
 GA_ERR_WRITE = 2
 GA_ERR_READ = 3
@@ -19,6 +20,10 @@ GA_ERR_FETCH_PROT = 9
 GA_ERR_READ_PROT = 10
 GA_ERR_UNKNOWN = 14
 GA_ERR_RECURSION = 15
+
+# SENTINELS
+REG_NOT_ANALYZED = 0xdeadcafebeefbabe
+REG_CONTROLLED = 0xcafedeadbabebeef
 
 err_desc = {
     GA_ERR_NULL:'Null dereference occured',
@@ -45,6 +50,7 @@ i386 = {
     'registers':['ax','bx','cx','dx','ah','al','bh','bl','ch','cl','dh','dl','eax','ebx','ecx','edx','esi','edi','ebp'],
     'sp':['esp'],
     'pc':['eip'],
+    'stack_pivots':['pop esp'],
     'prestateOpts':['eax','ebx','ecx','edx','esi','edi','ebp'],
     'uregs':{
         'sp':UC_X86_REG_ESP,
@@ -91,6 +97,8 @@ amd64 = {
     'sp':['rsp','esp'],
     'pc':['rip','eip'],
     'prestateOpts':['rax','rbx','rcx','rdx','rsi','rdi','rbp','r8','r9','r10','r11','r12','r13','r14','r15'],
+    'stack_pivots':['pop rsp','pop esp'],
+    'execve':"(rax==0x3b or rsi==0 or rdx==0 or rdi==0xdeadbeef) or (disasm.str.contains('syscall') and inst_cnt==1) or ((disasm.str.contains('pop rax') or disasm.str.contains('pop rsi') or disasm.str.contains('pop rdx') or disasm.str.contains('pop rdi')) and inst_cnt<4)",
     'uregs':{
         'sp':UC_X86_REG_RSP,
         'rax':UC_X86_REG_RAX,

@@ -2,7 +2,7 @@ from PySide6.QtGui import *
 from PySide6.QtWidgets import QTreeWidgetItem, QTreeWidgetItemIterator
 from .GadgetSearch import GadgetSearch
 from .constants import *
-from binaryninja import show_message_box
+from binaryninja import show_message_box, run_progress_dialog, get_save_filename_input
 from PySide6.QtCore import QCoreApplication
 
 class GadgetRender:
@@ -57,13 +57,12 @@ class GadgetRender:
         self.ui.dumpOpt.clicked.connect(self.prepareDump)
         self.ui.clearCacheButton.clicked.connect(self.clearCache)
         self.ui.reloadButton.clicked.connect(self.gsearch)
+        self.ui.exportButton.clicked.connect(self.export_gadgets)
         self.__selectedItem = None
 
         self.gs = GadgetSearch(bv)
-        if bv.session_data['RopView']['loading_canceled']:
-            self.search_canceled()
 
-        self.render_gadgets(bv.session_data['RopView']['gadget_disasm'].items())
+        self.gsearch()
 
         # Load the correct register names into the analysis prestate UI (Options tab)
         reg_label = getattr(self.ui,"reglabel",-1)
@@ -81,7 +80,7 @@ class GadgetRender:
                 getattr(self.ui,"regedit_"+str(i)).setVisible(False)
             i += 1
 
-    def update_and_sort(self):
+    def update_and_sort(self,pool=None):
         '''
         Clears gadget search pane (ui)
         Re renders gadget search pane (ui)
@@ -94,18 +93,18 @@ class GadgetRender:
         if isSelected:
             self.__selected = self.__selected[0].text(1)
         self.clear_gadgets()
-        res = self.sort(self.bv.session_data['RopView']['gadget_disasm'].copy()).items()
+        if pool == None:
+            res = self.sort(self.bv.session_data['RopView']['gadget_disasm'].copy()).items()
+        else:
+            res = self.sort(pool).items()
         self.render_gadgets(res)
         self.bv.session_data['RopView']['analysis_enabled'] = True
         if self.__selectedItem != None:
             self.__selectedItem.setSelected(True)
 
-    def repool(self,dep,include_dup,rop,jop,cop,sys):
-        self.gs = GadgetSearch(self.bv,depth=dep,repeat=include_dup,rop=rop,jop=jop,cop=cop,sys=sys)
-        if self.bv.session_data['RopView']['loading_canceled']:
-            self.search_canceled()
-        else:
-            self.update_and_sort()
+    def repool(self,dep,rop,jop,cop,sys):
+        self.gs = GadgetSearch(self.bv,depth=dep,rop=rop,jop=jop,cop=cop,sys=sys)
+        self.update_and_sort()
 
     def clear_gadgets(self):
         '''
@@ -151,11 +150,28 @@ class GadgetRender:
         if not found:
             self.__selectedItem = None
 
+    def remove_dups(self,update):
+        used = []
+        max = len(self.__allpool)
+        min = 0
+        for key, val in self.__allpool.copy().items():
+            min += 1
+            update(min,max)
+            if val in used:
+                self.__allpool.pop(key)
+                continue
+            used.append(val)
+
     def sort(self, pool):
         '''
         Sorting logic according to options done here. Some options will require a new gadget search be done in (update gs)
         before actual sorting can take place (ei depth)
         '''
+        # Duplicates
+        if not self.duplicates:
+            self.__allpool = pool
+            run_progress_dialog("Removing duplicates",False,self.remove_dups)
+            pool = self.__allpool
 
         # Bad bytes sort
         if self.bad_bytes != []:
@@ -247,12 +263,11 @@ class GadgetRender:
         - update and sort
         '''
         dep = int(self.ui.depthBox.text())
-        include_dup = self.gs.repeat
         rop = self.gs.rop
         jop = self.gs.jop
         cop = self.gs.cop
         sys = self.gs.sys
-        self.repool(dep,include_dup,rop,jop,cop,sys)
+        self.repool(dep,rop,jop,cop,sys)
 
     def prepareBlock(self):
         '''
@@ -285,52 +300,51 @@ class GadgetRender:
         self.update_and_sort()
 
     def prepareRepeat(self):
-        include_dup = self.ui.allOpt.isChecked()
+        self.duplicates = self.ui.allOpt.isChecked()
         dep = self.gs.depth
         rop = self.gs.rop
         jop = self.gs.jop
         cop = self.gs.cop
         sys = self.gs.sys
-        self.repool(dep,include_dup,rop,jop,cop,sys)
+        self.repool(dep,rop,jop,cop,sys)
 
     def prepareROP(self):
         rop = self.ui.ropOpt.isChecked()
         dep = self.gs.depth
-        include_dup = self.gs.repeat
         jop = self.gs.jop
         cop = self.gs.cop
         sys = self.gs.sys
-        self.repool(dep,include_dup,rop,jop,cop,sys)
+        self.repool(dep,rop,jop,cop,sys)
 
     def prepareCOP(self):
         cop = self.ui.copOpt.isChecked()
         dep = self.gs.depth
-        include_dup = self.gs.repeat
         rop = self.gs.rop
         jop = self.gs.jop
         sys = self.gs.sys
-        self.repool(dep,include_dup,rop,jop,cop,sys)
+        self.repool(dep,rop,jop,cop,sys)
 
     def prepareJOP(self):
         jop = self.ui.jopOpt.isChecked()
         dep = self.gs.depth
-        include_dup = self.gs.repeat
         rop = self.gs.rop
         cop = self.gs.cop
         sys = self.gs.sys
-        self.repool(dep,include_dup,rop,jop,cop,sys)
+        self.repool(dep,rop,jop,cop,sys)
 
     def preparesys(self):
         sys = self.ui.sysOpt.isChecked()
         dep = self.gs.depth
-        include_dup = self.gs.repeat
         rop = self.gs.rop
         jop = self.gs.jop
         cop = self.gs.cop
-        self.repool(dep,include_dup,rop,jop,cop,sys)
+        self.repool(dep,rop,jop,cop,sys)
 
     def __clearCache(self):
         mainthread.execute_on_main_thread_and_wait(self.clearCache)
+
+    def export_gadgets(self):
+        self.bv.session_data['RopView']['dataframe'].to_csv(get_save_filename_input("filename:", "csv", "gadgets.csv"), sep='\t\t\t\t')
 
     def clearCache(self):
         self.bv.session_data['RopView']['cache']['rop_disasm'] = {}
@@ -346,11 +360,10 @@ class GadgetRender:
     def gsearch(self):
         sys = self.gs.sys
         dep = self.gs.depth
-        include_dup = self.gs.repeat
         rop = self.gs.rop
         jop = self.gs.jop
         cop = self.gs.cop
-        self.repool(dep,include_dup,rop,jop,cop,sys)
+        self.repool(dep,rop,jop,cop,sys)
 
     def prepareDump(self):
         self.dump = self.ui.dumpOpt.isChecked()

@@ -7,17 +7,16 @@ class GadgetSearch:
     Discovers ROP gadgets in executable segments of memory.
     """
 
-    def __init__(self, bv, depth=10, repeat=False, rop=True, jop=False, cop=False, sys=True):
+    def __init__(self, bv, depth=10, rop=True, jop=False, cop=False, sys=True):
         """
         Responsible for gadget searching with applied options. 
         Find all control instructions in executable segments and count back by depth, saving each gadget
         :param bv: BinaryView
         :param depth: How many bytes back from a ctrl to save gadgets (instructions on x86 do not have a constant size, special handling required for other archs) (default=11)
-        :param repeat: Include duplicate gadgets (default=False)
         """
 
         # Exposed for renderer access
-        self.rop, self.jop, self.cop, self.repeat, self.depth, self.sys = rop, jop, cop, repeat, depth, sys
+        self.rop, self.jop, self.cop, self.depth, self.sys = rop, jop, cop, depth, sys
         self.__cache = ''
         self.__bv = bv
 
@@ -58,7 +57,7 @@ class GadgetSearch:
         bv.session_data['RopView']['cache']['depth'] = depth
 
         # Start gadget search, return success
-        bv.session_data['RopView']['loading_canceled'] = not run_progress_dialog("Loading gadgets",True,self.loadGadgets)
+        bv.session_data['RopView']['loading_canceled'] =  run_progress_dialog("Loading gadgets",False,self.loadGadgets)
 
     def loadGadgets(self,update):
         # Capstone instance used for disassembly
@@ -134,12 +133,6 @@ class GadgetSearch:
                             elif ctrl in gadgets[self.__bv.arch.name]['sys']:
                                 self.__bv.session_data['RopView']['cache']['sys_disasm'][curr_site] = disasm
                                 self.__bv.session_data['RopView']['cache']['sys_asm'][curr_site] = insn
-
-                            # Duplicates
-                            if not self.repeat:
-                                if disasm in used_gadgets:
-                                    continue
-                                used_gadgets.append(disasm)
                             
                             # All checks passed, save to pool
                             self.__bv.session_data['RopView']['gadget_disasm'][curr_site] = disasm
@@ -156,7 +149,6 @@ class GadgetSearch:
         asm_key = self.__cache+"_asm"
         disasm_cache = self.__bv.session_data['RopView']['cache'][disasm_key]
         asm_cache = self.__bv.session_data['RopView']['cache'][asm_key]
-        used_gadgets = []
         
         # For progress bar
         iteration = 0
@@ -164,11 +156,6 @@ class GadgetSearch:
 
         for addr,value in asm_cache.items():
             update(iteration,full)
-            if not self.repeat:
-                if value in used_gadgets:
-                    iteration += 1
-                    continue
-                used_gadgets.append(value)
             self.__bv.session_data['RopView']['gadget_asm'][addr] = value
             self.__bv.session_data['RopView']['gadget_disasm'][addr] = disasm_cache[addr]
             iteration += 1
