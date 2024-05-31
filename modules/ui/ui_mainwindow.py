@@ -17,10 +17,10 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QComboBox,
     QFrame, QGridLayout, QHBoxLayout, QHeaderView,
-    QLabel, QLineEdit, QListView, QListWidget,
-    QListWidgetItem, QPushButton, QSizePolicy, QSpacerItem,
-    QSpinBox, QSplitter, QTabWidget, QTreeWidget,
-    QTreeWidgetItem, QVBoxLayout, QWidget)
+    QLabel, QLineEdit, QListWidget, QListWidgetItem,
+    QPushButton, QSizePolicy, QSpacerItem, QSpinBox,
+    QSplitter, QTabWidget, QTreeWidget, QTreeWidgetItem,
+    QVBoxLayout, QWidget)
 
 class Ui_Form(object):
     def setupUi(self, Form):
@@ -28,7 +28,9 @@ class Ui_Form(object):
             Form.setObjectName(u"Form")
         Form.resize(1468, 769)
         Form.setFocusPolicy(Qt.NoFocus)
-        self.verticalLayout = QVBoxLayout(Form)
+        self.verticalLayout_7 = QVBoxLayout(Form)
+        self.verticalLayout_7.setObjectName(u"verticalLayout_7")
+        self.verticalLayout = QVBoxLayout()
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.lineEdit = QLineEdit(Form)
         self.lineEdit.setObjectName(u"lineEdit")
@@ -41,14 +43,26 @@ class Ui_Form(object):
 
         self.verticalLayout.addWidget(self.lineEdit)
 
-        self.statusLabel = QLabel(Form)
-        self.statusLabel.setObjectName(u"statusLabel")
+        self.horizontalLayout_5 = QHBoxLayout()
+        self.horizontalLayout_5.setObjectName(u"horizontalLayout_5")
+        self.resultsLabel = QLabel(Form)
+        self.resultsLabel.setObjectName(u"resultsLabel")
         font1 = QFont()
         font1.setPointSize(9)
+        self.resultsLabel.setFont(font1)
+        self.resultsLabel.setAlignment(Qt.AlignLeading|Qt.AlignLeft|Qt.AlignVCenter)
+
+        self.horizontalLayout_5.addWidget(self.resultsLabel)
+
+        self.statusLabel = QLabel(Form)
+        self.statusLabel.setObjectName(u"statusLabel")
         self.statusLabel.setFont(font1)
         self.statusLabel.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
 
-        self.verticalLayout.addWidget(self.statusLabel)
+        self.horizontalLayout_5.addWidget(self.statusLabel)
+
+
+        self.verticalLayout.addLayout(self.horizontalLayout_5)
 
         self.tabWidget = QTabWidget(Form)
         self.tabWidget.setObjectName(u"tabWidget")
@@ -96,6 +110,7 @@ class Ui_Form(object):
         self.tabWidget.addTab(self.GadgetView, "")
         self.ChainView = QWidget()
         self.ChainView.setObjectName(u"ChainView")
+        self.ChainView.setEnabled(False)
         self.gridLayout = QGridLayout(self.ChainView)
         self.gridLayout.setObjectName(u"gridLayout")
         self.ExportButton = QPushButton(self.ChainView)
@@ -111,7 +126,8 @@ class Ui_Form(object):
 
         self.gridLayout.addWidget(self.ExportType, 1, 0, 1, 1)
 
-        self.ChainWindow = QListView(self.ChainView)
+        self.ChainWindow = QListWidget(self.ChainView)
+        QListWidgetItem(self.ChainWindow)
         self.ChainWindow.setObjectName(u"ChainWindow")
         self.ChainWindow.setFrameShape(QFrame.NoFrame)
         self.ChainWindow.setEditTriggers(QAbstractItemView.NoEditTriggers)
@@ -785,22 +801,10 @@ class Ui_Form(object):
 
         self.horizontalLayout_2.addWidget(self.dumpOpt)
 
-        self.semanticOpt = QHBoxLayout()
-        self.semanticOpt.setObjectName(u"semanticOpt")
-        self.semanticLabel = QLabel(self.OptionsView)
-        self.semanticLabel.setObjectName(u"semanticLabel")
+        self.exportButton = QPushButton(self.OptionsView)
+        self.exportButton.setObjectName(u"exportButton")
 
-        self.semanticOpt.addWidget(self.semanticLabel)
-
-        self.semanticBox = QSpinBox(self.OptionsView)
-        self.semanticBox.setObjectName(u"semanticBox")
-        self.semanticBox.setMaximum(500)
-        self.semanticBox.setValue(50)
-
-        self.semanticOpt.addWidget(self.semanticBox)
-
-
-        self.horizontalLayout_2.addLayout(self.semanticOpt)
+        self.horizontalLayout_2.addWidget(self.exportButton)
 
 
         self.verticalLayout_4.addLayout(self.horizontalLayout_2)
@@ -824,6 +828,9 @@ class Ui_Form(object):
         self.verticalLayout.addWidget(self.tabWidget)
 
 
+        self.verticalLayout_7.addLayout(self.verticalLayout)
+
+
         self.retranslateUi(Form)
 
         self.tabWidget.setCurrentIndex(0)
@@ -835,6 +842,7 @@ class Ui_Form(object):
     def retranslateUi(self, Form):
         Form.setWindowTitle(QCoreApplication.translate("Form", u"Form", None))
         self.lineEdit.setPlaceholderText(QCoreApplication.translate("Form", u"Search filter", None))
+        self.resultsLabel.setText("")
         self.statusLabel.setText("")
         ___qtreewidgetitem = self.gadgetPane.headerItem()
         ___qtreewidgetitem.setText(2, QCoreApplication.translate("Form", u"Gadget", None));
@@ -844,6 +852,13 @@ class Ui_Form(object):
         self.ExportButton.setText(QCoreApplication.translate("Form", u"Export", None))
         self.ExportType.setItemText(0, QCoreApplication.translate("Form", u"pwntools", None))
         self.ExportType.setItemText(1, QCoreApplication.translate("Form", u"packed", None))
+
+
+        __sortingEnabled = self.ChainWindow.isSortingEnabled()
+        self.ChainWindow.setSortingEnabled(False)
+        ___qlistwidgetitem = self.ChainWindow.item(0)
+        ___qlistwidgetitem.setText(QCoreApplication.translate("Form", u"Feature not yet available", None));
+        self.ChainWindow.setSortingEnabled(__sortingEnabled)
 
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.ChainView), QCoreApplication.translate("Form", u"Chain Builder", None))
         self.prestateLabel.setText(QCoreApplication.translate("Form", u"Analysis Prestate", None))
@@ -962,12 +977,9 @@ class Ui_Form(object):
 #endif // QT_CONFIG(tooltip)
         self.dumpOpt.setText(QCoreApplication.translate("Form", u"Dump", None))
 #if QT_CONFIG(tooltip)
-        self.semanticLabel.setToolTip(QCoreApplication.translate("Form", u"The maximum amount of semantic results to return from a search", None))
+        self.exportButton.setToolTip(QCoreApplication.translate("Form", u"Export gadgets dataframe to csv for data analysis", None))
 #endif // QT_CONFIG(tooltip)
-        self.semanticLabel.setText(QCoreApplication.translate("Form", u"Semantic results limit", None))
-#if QT_CONFIG(tooltip)
-        self.semanticBox.setToolTip(QCoreApplication.translate("Form", u"The maximum amount of semantic results to return from a search", None))
-#endif // QT_CONFIG(tooltip)
+        self.exportButton.setText(QCoreApplication.translate("Form", u"Export gadgets", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.OptionsView), QCoreApplication.translate("Form", u"Options", None))
     # retranslateUi
 

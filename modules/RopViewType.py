@@ -35,7 +35,6 @@ class RopView(QScrollArea, View):
 		binaryView.session_data['RopView']['cache']['sys_asm'] = {}
 		binaryView.session_data['RopView']['cache']['depth'] = 10
 		binaryView.session_data['RopView']['cache']['analysis'] = {}
-		binaryView.session_data['RopView']['loading_canceled'] = False
 		binaryView.session_data['RopView']['analysis_enabled'] = True
 
 		# Base UI

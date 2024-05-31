@@ -2,7 +2,7 @@ from PySide6.QtGui import *
 from PySide6.QtWidgets import QTreeWidgetItem, QTreeWidgetItemIterator
 from .GadgetSearch import GadgetSearch
 from .constants import *
-from binaryninja import show_message_box, run_progress_dialog
+from binaryninja import show_message_box, run_progress_dialog, get_save_filename_input
 from PySide6.QtCore import QCoreApplication
 
 class GadgetRender:
@@ -43,14 +43,12 @@ class GadgetRender:
         self.bv = bv
         self.bv_arch = bv.arch.name
         self.__selected = None
-        self.semantic = 50
 
         self.ui.badBytesEdit.textChanged.connect(self.prepareBadBytes)
         self.ui.depthBox.textChanged.connect(self.prepareDepth)
         self.ui.blockEdit.textChanged.connect(self.prepareBlock)
         self.ui.rangeEdit.textChanged.connect(self.prepareRange)
         self.ui.instCntSpinbox.textChanged.connect(self.prepareInstCnt)
-        self.ui.semanticBox.textChanged.connect(self.semanticLimit)
         self.ui.allOpt.clicked.connect(self.prepareRepeat)
         self.ui.ropOpt.clicked.connect(self.prepareROP)
         self.ui.copOpt.clicked.connect(self.prepareCOP)
@@ -59,12 +57,10 @@ class GadgetRender:
         self.ui.dumpOpt.clicked.connect(self.prepareDump)
         self.ui.clearCacheButton.clicked.connect(self.clearCache)
         self.ui.reloadButton.clicked.connect(self.gsearch)
+        self.ui.exportButton.clicked.connect(self.export_gadgets)
         self.__selectedItem = None
 
         self.gs = GadgetSearch(bv)
-        if bv.session_data['RopView']['loading_canceled']:
-            self.search_canceled()
-
 
         self.gsearch()
 
@@ -108,10 +104,7 @@ class GadgetRender:
 
     def repool(self,dep,rop,jop,cop,sys):
         self.gs = GadgetSearch(self.bv,depth=dep,rop=rop,jop=jop,cop=cop,sys=sys)
-        if self.bv.session_data['RopView']['loading_canceled']:
-            self.search_canceled()
-        else:
-            self.update_and_sort()
+        self.update_and_sort()
 
     def clear_gadgets(self):
         '''
@@ -350,6 +343,9 @@ class GadgetRender:
     def __clearCache(self):
         mainthread.execute_on_main_thread_and_wait(self.clearCache)
 
+    def export_gadgets(self):
+        self.bv.session_data['RopView']['dataframe'].to_csv(get_save_filename_input("filename:", "csv", "gadgets.csv"), sep='\t\t\t\t')
+
     def clearCache(self):
         self.bv.session_data['RopView']['cache']['rop_disasm'] = {}
         self.bv.session_data['RopView']['cache']['rop_asm'] = {}
@@ -377,6 +373,3 @@ class GadgetRender:
             self.ui.gadgetPane.hideColumn(1)
         self.update_and_sort()
         self.ui.gadgetPane.resizeColumnToContents(1)
-
-    def semanticLimit(self):
-        self.semantic = int(self.ui.semanticBox.text())

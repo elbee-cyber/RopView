@@ -57,7 +57,7 @@ class GadgetSearch:
         bv.session_data['RopView']['cache']['depth'] = depth
 
         # Start gadget search, return success
-        bv.session_data['RopView']['loading_canceled'] = not run_progress_dialog("Loading gadgets",True,self.loadGadgets)
+        bv.session_data['RopView']['loading_canceled'] =  run_progress_dialog("Loading gadgets",False,self.loadGadgets)
 
     def loadGadgets(self,update):
         # Capstone instance used for disassembly

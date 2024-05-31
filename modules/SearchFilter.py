@@ -16,6 +16,7 @@ class SearchFilter:
         self.last_semantic = list(self.bv.session_data['RopView']['gadget_asm'].keys())[0]
 
     def query(self):
+        self.renderer.ui.resultsLabel.setText('')
         query = self.ui.lineEdit.text()
 
         # Empited query, return normal
@@ -57,20 +58,69 @@ class SearchFilter:
             preset = preset[:-3]+")"
             query = query.replace('stack_pivot',preset)
 
+        ## execve
+        if 'execve' in query:
+            try:
+                query = query.replace('execve',arch[self.bv.arch.name]['execve'])
+            except:
+                show_message_box("Preset does not exist","{} preset does not exist for {}".format('execve',self.bv.arch.name))
+
+        # Space mismatching
+        query = query.replace(' =','=')
+        query = query.replace(' -','-')
+        query = query.replace(' +','+')
+        query = query.replace(' /','/')
+        query = query.replace(' *','*')
+        query = query.replace(' <','<')
+        query = query.replace(' >','>')
+        query = query.replace('= ','=')
+        query = query.replace('- ','-')
+        query = query.replace('+ ','+')
+        query = query.replace('/ ','/')
+        query = query.replace('* ','*')
+        query = query.replace('< ','<')
+        query = query.replace('> ','>')
+
         # Semantic regs
         semantic = []
 
-        # Exclude sentinel from semantic search
+        # Transform semantic searches of type reg[><=/*+-]
+        ## Transformation: ((reg[><=/*+-] or reg==FULL_CONTROL) and not reg==NOT_ANALYZED)
+        replacements = []
         for reg in arch[self.bv.arch.name]['prestateOpts']:
-            if re.match(reg+'[\>\<=\-+\/*]',query) != None:
+            if re.search(reg+'[\>\<=\-+\/*]',query) != None:
+                reg_matches = re.finditer(reg+'[\>\<=\-+\/*]{1,2}',query)
+                for match in reg_matches:
+                    extract_reg = re.sub('[\>\<=\-+\/*]{1,2}','',match.group())
+                    space_index = query[match.span()[1]:].find(' ')
+                    if space_index != -1:
+                        subquery = query[match.span()[0]:space_index+len(query[:match.span()[1]])]
+                    else:
+                        subquery = query[match.span()[0]:]
+                    replacements.append((subquery,"(({} or {}=={}) and not {}=={})".format(subquery, extract_reg, REG_CONTROLLED, extract_reg, REG_NOT_ANALYZED)))
                 semantic.append(reg)
-                query += " and not "+str(reg)+"=="+str(REG_NOT_ANALYZED)
+        for replacement in replacements:
+            query = query.replace(replacement[0],replacement[1])
+
+        if len(semantic) > 0:
+            self.__semanticQuery = query
+            self.__semanticRegs = semantic
+            if not run_progress_dialog("Performing semantic search",True,self.semantic):
+                status = "Semantic search on "
+                for reg in semantic:
+                    status += reg+", "
+                self.setStatus(status[:-2]+" canceled",True)
 
         # Save matching results
         results = self.attemptQuery(query)
 
         if len(semantic) > 0:
-            results = list(set(results + self.semantic(query)))
+            if len(results) == 0:
+                self.setStatus("Semantic search failed",True)
+            else:
+                self.setStatus("Semantic search completed")
+        else:
+            self.setStatus("Search completed")
 
         # Build pool and update rendering
         if len(results) == 0:
@@ -82,40 +132,32 @@ class SearchFilter:
             pool[addr] = self.bv.session_data['RopView']['gadget_disasm'][addr]
         self.renderer.update_and_sort(pool)
 
-    def semantic(self,query):
+    def semantic(self,update):
         
-        # Retrieve from cache
-        results = []
         allowed_regs = arch[self.bv.arch.name]['prestateOpts']
-        #address_range = list(self.bv.session_data['RopView']['gadget_asm'].keys())
         prestate = self.renderer.buildPrestate()
         reg_vals = {}
-        res_cnt = len(self.attemptQuery(query))
-        explicit_regs = []
-        pop_cond = " or "
-        cnt = 0
-
-        # Build query to include control gadgets and add target registers
-        add_pop_quer = False
-        for reg in allowed_regs:
-            if reg in query:
-                pop_cond += reg+"==("+str(REG_CONTROLLED)+") or "
-                explicit_regs.append(reg)
-                add_pop_quer = True
-        if add_pop_quer:
-            query += pop_cond[:-4]
+        cnt = 1
 
         # Only search spaces operating on target registers
         include = ""
-        for reg in explicit_regs:
+        for reg in self.__semanticRegs:
             include += "disasm.str.contains('"+reg+"') or "
         search_space = self.attemptQuery(include[:-4])
+        search_space_len = len(search_space)
 
-        df = self.attemptQuery(query)
-        debug_notify(len(search_space))
+        df = self.attemptQuery(self.__semanticQuery)
+
+        # Prevent exhaustion
+        limit = 200
 
         # GadgetAnalysis
         for addr in search_space:
+            if cnt > limit:
+                break
+            if not update(cnt*(len(df)+1)*len(self.__semanticRegs),search_space_len):
+                break
+            cnt += 1
             # Populate [regs]
             if addr in self.bv.session_data['RopView']['cache']['analysis']:
                 reg_vals = self.bv.session_data['RopView']['cache']['analysis'][addr].end_state
@@ -130,7 +172,7 @@ class SearchFilter:
                 self.bv.session_data['RopView']['cache']['analysis'][addr] = ga.saveState()
 
             contains_used = False
-            for reg in explicit_regs:
+            for reg in self.__semanticRegs:
                 if reg in reg_vals:
                     contains_used = True
                     break
@@ -149,21 +191,15 @@ class SearchFilter:
                 else:
                     self.full_df.loc[self.full_df['addr'] == addr, reg] = val
 
-            df = self.attemptQuery(query)
-            debug_notify(len(df))
-        results = df
-        return results
+            df = self.attemptQuery(self.__semanticQuery)
 
     def attemptQuery(self,query):
         results = []
         try:
             resultsDF = self.full_df.query(query)
         except:
-            try:
-                resultsDF = self.full_df.query("disasm.str.contains('"+query+"')")
-            except:
-                show_message_box("Invalid query","An invalid search query was provided")
-                return results
+            self.setStatus("Invalid query provided, please try again",True)
+            return results
         for index, row in resultsDF.iterrows():
             results.append(row['addr'])
         return results
@@ -184,10 +220,14 @@ class SearchFilter:
             'disasm':list(self.bv.session_data['RopView']['gadget_disasm'].values())
         }
         self.full_df = pd.DataFrame(gadget_data)
+        self.bv.session_data['RopView']['dataframe'] = self.full_df
         # Add reg columns
         for reg in self.regs:
             self.full_df[reg]=REG_NOT_ANALYZED
 
-    def addSemantic(self):
-        pass
-        
+    def setStatus(self,text,error=False):
+        self.renderer.ui.resultsLabel.setText(text)
+        if error:
+            self.renderer.ui.resultsLabel.setStyleSheet("QLabel { color : red; }")
+        else:
+            self.renderer.ui.resultsLabel.setStyleSheet("QLabel { color : white; }")
