@@ -22,6 +22,7 @@ class RopView(QScrollArea, View):
 		:param parent: Super class of Qt UI object
 		:param binaryView: Current binaryview
 		'''
+
 		# Session data
 		binaryView.session_data['RopView'] = {}
 		binaryView.session_data['RopView']['cache'] = {}
@@ -48,6 +49,13 @@ class RopView(QScrollArea, View):
 		self.ui.setupUi(self)
 		self.ui.gadgetPane.hideColumn(1)
 		self.ui.gadgetPane.resizeColumnToContents(2)
+
+		# Support check
+		if binaryView.arch.name not in arch or arch[binaryView.arch.name] == {}:
+			show_message_box("Unsupported Architecture","{} is not yet supported!".format(binaryView.arch.name))
+			self.ui.resultsLabel.setText("Unsupported file type: {}".format(binaryView.arch.name))
+			self.ui.resultsLabel.setStyleSheet("QLabel { color : red; }")
+			return
 		
 		# Gadget Pane
 		self.renderer = GadgetRender(self.binaryView, self.ui)
@@ -261,7 +269,7 @@ class RopView(QScrollArea, View):
 
 class RopViewType(ViewType):
 	def __init__(self):
-		super(RopViewType, self).__init__("Untitled ROPTool View", "Untitled ROPTool View")
+		super(RopViewType, self).__init__("RopView", "RopView")
 
 	def create(self, binaryView, view_frame):
 		return RopView(view_frame, binaryView)
