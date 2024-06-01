@@ -2,7 +2,7 @@ from .constants import *
 from .GadgetSearch import *
 from .GadgetAnalysis import *
 import pandas as pd
-import re,random,gc
+import re,random
 
 class SearchFilter:
 
