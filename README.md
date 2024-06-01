@@ -42,3 +42,6 @@ Analysis and example search (semantic)
 
 # Contributions
 Contributions are welcome! Please open an issue if you encounter a bug.
+
+# Pre-release notes
+I am waiting on finishing the post for my technical blog and other miscellaneous activities before creating a release tag and opening an issue to add to community-plugins. In the meantime, install by git cloning this repo into `~/.binaryninja/plugins`
