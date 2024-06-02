@@ -42,3 +42,6 @@ Analysis and example search (semantic)
 
 # Contributions
 Contributions are welcome! Please open an issue if you encounter a bug.
+
+# Installation
+Install this plugin by cloning this repo into `~/.binaryninja/plugins`
