@@ -1,12 +1,12 @@
 # RopView - Gadget Analysis Framework
 ![logo.png](images/logo.png)
-[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)](http://choosealicense.com/licenses/mit/)  [![Twitter](https://img.shields.io/twitter/follow/elbee_ez)](https://x.com/elbee_ez) [![Docs](https://img.shields.io/badge/Blog%20post-details-blue)](https://faultpoint.com)
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)](http://choosealicense.com/licenses/mit/)  [![Twitter](https://img.shields.io/twitter/follow/elbee_ez)](https://x.com/elbee_ez) [![Technical Post](https://img.shields.io/badge/Blog%20post-details-blue)](https://faultpoint.com/post/2024-06-02-binja-plugin-ropview/)
 
 RopView is a gadget analysis framework for BinaryNinja capable of granular per-instruction based analysis and complex logical queries.
 
 # Features
 ## Gadget Search
-Gadget searching and pooling is fully integrated into the BinaryView and takes advantage of the currently loaded session for quick discovery and caching, making it faster than many similar ROP tools. Additionally, the usual options are available to configure the search settings and constrain the gadget pool appropriately.
+Gadget searching and pooling is fully integrated into the BinaryView and takes advantage of the currently loaded session for quick discovery and caching, making it faster than many similar ROP tools. Additionally, the usual options are available to configure the search settings and constrain the gadget pool appropriately. For a detailed technical explanation, refer to [this post](https://faultpoint.com/post/2024-06-02-binja-plugin-ropview/).
 
 ## Gadget Analysis
 In the right pane, an analysis is shown of the currently selected gadget in the pool. This pane details the effects of the gadget on memory locations, clobbered registers, and accesses made to the stack or other memory regions. The analysis shows a start state, intermediary step states, and an end state. The analysis framework takes advantage of [unicorn engine](https://www.unicorn-engine.org/) and can return a report instantly. This is done using different hooks to add analysis and diffing functionality inbetween the fetch-execute cycle and resolve fetched mappings from the target binary into the analysis context in realtime as requested. Gadget contexts are cached for later use and attributes are added to the search engine as queryable columns, allowing for semantic based searches. The memory context before analysis is also tunable. In options, one can define register values for a prestate before emulation of the gadget occurs. In the future, I plan to add functionality to allow for prestate populating based on imported corefiles and attaching to the BinaryNinja debugger.
@@ -42,6 +42,3 @@ Analysis and example search (semantic)
 
 # Contributions
 Contributions are welcome! Please open an issue if you encounter a bug.
-
-# Pre-release notes
-I am waiting on finishing the post for my technical blog and other miscellaneous activities before creating a release tag and opening an issue to add to community-plugins. In the meantime, install by git cloning this repo into `~/.binaryninja/plugins`
