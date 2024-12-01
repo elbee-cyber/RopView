@@ -61,7 +61,7 @@ class GadgetSearch:
 
     def loadGadgets(self,update):
         # Capstone instance used for disassembly
-        md = Cs(capstone_arch[self.__bv.arch.name], bitmode(self.__bv.arch.name)[0])
+        md = Cs(capstone_arch[self.__bv.arch.name], bitmode(self.__bv.arch.name))
 
         # Used to check for duplicates
         used_gadgets = []

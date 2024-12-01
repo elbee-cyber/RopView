@@ -450,7 +450,7 @@ class GadgetAnalysis:
         asm = mu.mem_read(address,size)
 
         # Current disasm
-        md = Cs(capstone_arch[self._arch], bitmode(self._arch)[0])
+        md = Cs(capstone_arch[self._arch], bitmode(self._arch))
         for i in md.disasm(asm, 0x1000):
             disasm += i.mnemonic+' '+i.op_str
 
