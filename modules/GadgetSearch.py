@@ -1,6 +1,7 @@
 from .constants import *
 import re
 from binaryninja import *
+from cache import cache
 
 class GadgetSearch:
     """
@@ -19,42 +20,40 @@ class GadgetSearch:
         self.rop, self.jop, self.cop, self.depth, self.sys = rop, jop, cop, depth, sys
         self.__cache = ''
         self.__bv = bv
+        self.cache = cache(bv)
 
         ### !! GadgetSearch should be the only entity allowed to modify this !! ###
-        # Dict of gadget mnemonics {addr:str}
-        bv.session_data['RopView']['gadget_disasm'] = {}
-        # Dict of raw gadgets {addr:bytes}
-        bv.session_data['RopView']['gadget_asm'] = {}
+        self.cache.gcache.flush()
 
         # Load from cache or prepare for search
         self.__control_insn = ()
         if rop:
-            if (bv.session_data['RopView']['cache']['rop_disasm'] != {}) and (depth == bv.session_data['RopView']['cache']['depth']):
+            if (not self.cache.rop_cache.isEmpty()) and (depth == bv.session_data['RopView']['depth']):
                 self.__cache = 'rop'
                 run_progress_dialog("Loading ROP cache",False,self.load_from_cache)
             else:
                 self.__control_insn += gadgets[bv.arch.name]['rop']
         if jop:
-            if (bv.session_data['RopView']['cache']['jop_disasm'] != {}) and (depth == bv.session_data['RopView']['cache']['depth']):
+            if (not self.cache.jop_cache.isEmpty()) and (depth == bv.session_data['RopView']['depth']):
                 self.__cache = 'jop'
                 run_progress_dialog("Loading JOP cache",False,self.load_from_cache)
             else:
                 self.__control_insn += gadgets[bv.arch.name]['jop']
         if cop:
-            if (bv.session_data['RopView']['cache']['cop_disasm'] != {}) and (depth == bv.session_data['RopView']['cache']['depth']):
+            if (not self.cache.cop_cache.isEmpty()) and (depth == bv.session_data['RopView']['depth']):
                 self.__cache = 'cop'
                 run_progress_dialog("Loading COP cache",False,self.load_from_cache)
             else:
                 self.__control_insn += gadgets[bv.arch.name]['cop']
         if sys:
-            if (bv.session_data['RopView']['cache']['sys_disasm'] != {}) and (depth == bv.session_data['RopView']['cache']['depth']):
+            if (not self.cache.sys_cache.isEmpty()) and (depth == bv.session_data['RopView']['depth']):
                 self.__cache = 'sys'
                 run_progress_dialog("Loading SYS cache",False,self.load_from_cache)
             else:
                 self.__control_insn += gadgets[bv.arch.name]['sys']
 
         # Save depth
-        bv.session_data['RopView']['cache']['depth'] = depth
+        bv.session_data['RopView']['depth'] = depth
 
         # Start gadget search, return success
         bv.session_data['RopView']['loading_canceled'] = not run_progress_dialog("Loading gadgets",True,self.loadGadgets)
@@ -62,9 +61,6 @@ class GadgetSearch:
     def loadGadgets(self,update):
         # Capstone instance used for disassembly
         md = Cs(capstone_arch[self.__bv.arch.name], bitmode(self.__bv.arch.name))
-
-        # Used to check for duplicates
-        used_gadgets = []
 
         # update
         curr = self.__bv.start
@@ -89,9 +85,7 @@ class GadgetSearch:
                 # Progress bar
                 curr = save+(self.__bv.end*last_iter)
                 if update(curr,full) == False:
-                    self.__bv.session_data['RopView']['gadget_disasm'] = {}
-                    self.__bv.session_data['RopView']['gadget_asm'] = {}
-                    self.empty_cache()
+                    self.cache.fullflush()
                     return False
 
                 # Confirm the gadget site contains the current control instruction
@@ -131,9 +125,10 @@ class GadgetSearch:
 
                             # Cache (cache should contain ALL gadget sites)
                             if ctrl in gadgets[self.__bv.arch.name]['rop']:
-                                self.__bv.session_data['RopView']['cache']['rop_disasm'][curr_site] = disasm
-                                self.__bv.session_data['RopView']['cache']['rop_asm'][curr_site] = insn
+                                self.cache.rop_cache.store_disasm({curr_site:disasm})
+                                self.cache.rop_cache.store_asm({curr_site:insn})
                             elif ctrl in gadgets[self.__bv.arch.name]['jop']:
+                                # !!! CONTINUE CACHE REPLACEMENT HERE !!! #
                                 self.__bv.session_data['RopView']['cache']['jop_disasm'][curr_site] = disasm
                                 self.__bv.session_data['RopView']['cache']['jop_asm'][curr_site] = insn
                             elif ctrl in gadgets[self.__bv.arch.name]['cop']:
@@ -168,13 +163,3 @@ class GadgetSearch:
             self.__bv.session_data['RopView']['gadget_asm'][addr] = value
             self.__bv.session_data['RopView']['gadget_disasm'][addr] = disasm_cache[addr]
             iteration += 1
-
-    def empty_cache(self, extra=None):
-        self.__bv.session_data['RopView']['cache']['rop_disasm'] = {}
-        self.__bv.session_data['RopView']['cache']['rop_asm'] = {} 
-        self.__bv.session_data['RopView']['cache']['jop_disasm'] = {}
-        self.__bv.session_data['RopView']['cache']['jop_asm'] = {} 
-        self.__bv.session_data['RopView']['cache']['cop_disasm'] = {}
-        self.__bv.session_data['RopView']['cache']['cop_asm'] = {}
-        self.__bv.session_data['RopView']['cache']['sys_disasm'] = {}
-        self.__bv.session_data['RopView']['cache']['sys_asm'] = {}

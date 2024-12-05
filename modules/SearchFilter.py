@@ -13,7 +13,6 @@ class SearchFilter:
         self.renderer = renderer
         self.regs = arch[self.bv.arch.name]['prestateOpts']
         self.buildDataFrame()
-        self.last_semantic = list(self.bv.session_data['RopView']['gadget_asm'].keys())[0]
 
     def query(self):
         self.renderer.ui.resultsLabel.setText('')

@@ -5,6 +5,7 @@ from .constants import *
 from binaryninja import show_message_box, run_progress_dialog, get_save_filename_input
 from PySide6.QtCore import QCoreApplication
 from .SearchFilter import SearchFilter
+from cache import cache
 
 class GadgetRender:
     '''
@@ -60,6 +61,7 @@ class GadgetRender:
         self.ui.reloadButton.clicked.connect(self.gsearch)
         self.ui.exportButton.clicked.connect(self.export_gadgets)
         self.__selectedItem = None
+        self.cache = cache(bv)
 
         self.gs = GadgetSearch(bv)
         if self.bv.session_data['RopView']['loading_canceled']:
@@ -342,22 +344,12 @@ class GadgetRender:
         cop = self.gs.cop
         self.repool(dep,rop,jop,cop,sys)
 
-    def __clearCache(self):
-        mainthread.execute_on_main_thread_and_wait(self.clearCache)
-
     def export_gadgets(self):
         self.bv.session_data['RopView']['dataframe'].to_csv(get_save_filename_input("filename:", "csv", "gadgets.csv"), sep='\t\t\t\t')
 
     def clearCache(self):
-        self.bv.session_data['RopView']['cache']['rop_disasm'] = {}
-        self.bv.session_data['RopView']['cache']['rop_asm'] = {}
-        self.bv.session_data['RopView']['cache']['jop_disasm'] = {}
-        self.bv.session_data['RopView']['cache']['jop_asm'] = {} 
-        self.bv.session_data['RopView']['cache']['cop_disasm'] = {}
-        self.bv.session_data['RopView']['cache']['cop_asm'] = {}
-        self.bv.session_data['RopView']['cache']['sys_disasm'] = {}
-        self.bv.session_data['RopView']['cache']['sys_asm'] = {}
-        show_message_box("Cache cleared","All gadget caches have been flushed")
+        self.cache.fullflush()
+        show_message_box("Cache flushed","Full flush operation succeeded!")
 
     def gsearch(self):
         sys = self.gs.sys
