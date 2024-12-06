@@ -151,6 +151,11 @@ class GadgetSearch:
                 curr_site = save+1
         
         # Save metadata to bv
+        worker_enqueue(self.saveCache)
+
+        return True
+
+    def saveCache(self):
         self.__bv.store_metadata("RopView.rop_disasm",self.__bv.session_data['RopView']['cache']['rop_disasm'])
         self.__bv.store_metadata("RopView.rop_asm",self.__bv.session_data['RopView']['cache']['rop_asm'])
         self.__bv.store_metadata("RopView.jop_disasm",self.__bv.session_data['RopView']['cache']['jop_disasm'])
@@ -161,8 +166,6 @@ class GadgetSearch:
         self.__bv.store_metadata("RopView.sys_asm",self.__bv.session_data['RopView']['cache']['sys_asm'])
         self.__bv.store_metadata("RopView.gadget_disasm",self.__bv.session_data['RopView']['gadget_disasm'])
         self.__bv.store_metadata("RopView.gadget_asm",self.__bv.session_data['RopView']['gadget_asm'])
-
-        return True
 
     def load_from_cache(self, update):
         disasm_key = self.__cache+"_disasm"
