@@ -29,11 +29,7 @@ class RopView(QScrollArea, View):
 		binaryView.session_data['RopView']['analysis_enabled'] = True
 		binaryView.session_data['RopView']['search_initialized'] = False
 		self.cache = cache(binaryView)
-		try:
-			binaryView.query_metadata("RopView.rop_disasm")
-			print("Restored cache")
-		except KeyError:
-			self.cache.build()
+		self.cache.build()
 
 		# Base UI
 		QScrollArea.__init__(self, parent)

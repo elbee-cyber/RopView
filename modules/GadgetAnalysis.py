@@ -35,9 +35,9 @@ class GadgetAnalysis:
         self.cache = cache(bv)
 
         # The gadget asm
-        if addr not in self.cache.gcache.load_asm():
+        if addr not in self.bv.session_data['RopView']['asm']:#self.cache.gcache.load_asm():
             return
-        self._gadget_Raw = self.cache.gcache.load_asm()[addr]
+        self._gadget_Raw = self.bv.session_data['RopView']['asm'][addr]#self.cache.gcache.load_asm()[addr]
 
         # Gadget str split by instruction
         self.instructions = gadget_str.split(';')

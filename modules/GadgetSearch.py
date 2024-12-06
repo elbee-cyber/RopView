@@ -165,6 +165,7 @@ class GadgetSearch:
         self.cache.sys_cache.store_asm(sys_asm)
         self.cache.gcache.store_disasm(g_disasm)
         self.cache.gcache.store_asm(g_asm)
+        self.__bv.session_data['RopView']['asm'] = self.cache.gcache.load_asm().copy()
         return True
 
     def load_from_cache(self, update):
