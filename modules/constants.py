@@ -1,5 +1,4 @@
 from capstone import *
-from keystone import *
 from unicorn.unicorn_const import *
 from unicorn.x86_const import *
 from binaryninja import log_info
@@ -236,18 +235,11 @@ capstone_arch = {
     'arm64':0
 }
 
-keystone_arch = {
-    'x86':KS_ARCH_X86,
-    'x86_64':KS_ARCH_X86,
-    'arm32':0,
-    'arm64':0
-}
-
 def bitmode(arch):
     if '64' in arch:
-        return (CS_MODE_64,KS_MODE_64)
+        return CS_MODE_64
     elif 'x86' in arch:
-        return (CS_MODE_32,KS_MODE_32)
+        return CS_MODE_32
 
 def debug_notify(msg):
     log_info(str(msg),'RopView - Debug')
