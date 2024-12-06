@@ -1,7 +1,7 @@
 from .constants import *
 import re
 from binaryninja import *
-from cache import cache
+from .cache import cache
 
 class GadgetSearch:
     """
@@ -67,6 +67,18 @@ class GadgetSearch:
         last_iter = 0
         full = (self.__bv.end-self.__bv.start) * len(self.__control_insn)
 
+        # temporary
+        rop_disasm = {}
+        rop_asm = {}
+        jop_disasm = {}
+        jop_asm = {}
+        cop_disasm = {}
+        cop_asm = {}
+        sys_disasm = {}
+        sys_asm = {}
+        g_disasm = {}
+        g_asm = {}
+
         for ctrl in self.__control_insn:
             # Used for progress iter
             last_iter +=1
@@ -123,36 +135,42 @@ class GadgetSearch:
                             if disasm == '' or disasm == ' ' or ctrl[3] not in disasm.split(';')[-2]:
                                 continue
 
-                            # Cache (cache should contain ALL gadget sites)
+                            # save all gadgets for cache commit later (only make large stores)
                             if ctrl in gadgets[self.__bv.arch.name]['rop']:
-                                self.cache.rop_cache.store_disasm({curr_site:disasm})
-                                self.cache.rop_cache.store_asm({curr_site:insn})
+                                rop_disasm.update({curr_site:disasm})
+                                rop_asm.update({curr_site:insn})
                             elif ctrl in gadgets[self.__bv.arch.name]['jop']:
-                                # !!! CONTINUE CACHE REPLACEMENT HERE !!! #
-                                self.__bv.session_data['RopView']['cache']['jop_disasm'][curr_site] = disasm
-                                self.__bv.session_data['RopView']['cache']['jop_asm'][curr_site] = insn
+                                jop_disasm.update({curr_site:disasm})
+                                jop_asm.update({curr_site:insn})
                             elif ctrl in gadgets[self.__bv.arch.name]['cop']:
-                                self.__bv.session_data['RopView']['cache']['cop_disasm'][curr_site] = disasm
-                                self.__bv.session_data['RopView']['cache']['cop_asm'][curr_site] = insn
+                                cop_disasm.update({curr_site:disasm})
+                                cop_asm.update({curr_site:insn})
                             elif ctrl in gadgets[self.__bv.arch.name]['sys']:
-                                self.__bv.session_data['RopView']['cache']['sys_disasm'][curr_site] = disasm
-                                self.__bv.session_data['RopView']['cache']['sys_asm'][curr_site] = insn
+                                sys_disasm.update({curr_site:disasm})
+                                sys_asm.update({curr_site:insn})
                             
-                            # All checks passed, save to pool
-                            self.__bv.session_data['RopView']['gadget_disasm'][curr_site] = disasm
-                            self.__bv.session_data['RopView']['gadget_asm'][curr_site] = insn
-
-                            
+                            g_disasm.update({curr_site:disasm})
+                            g_asm.update({curr_site:insn})
 
                 # Next address for search
                 curr_site = save+1
+        # store final pools (make large stores only)
+        self.cache.rop_cache.store_disasm(rop_disasm)
+        self.cache.rop_cache.store_asm(rop_asm)
+        self.cache.jop_cache.store_disasm(jop_disasm)
+        self.cache.jop_cache.store_asm(jop_asm)
+        self.cache.cop_cache.store_disasm(cop_disasm)
+        self.cache.cop_cache.store_asm(cop_asm)
+        self.cache.sys_cache.store_disasm(sys_disasm)
+        self.cache.sys_cache.store_asm(sys_asm)
+        self.cache.gcache.store_disasm(g_disasm)
+        self.cache.gcache.store_asm(g_asm)
         return True
 
     def load_from_cache(self, update):
-        disasm_key = self.__cache+"_disasm"
-        asm_key = self.__cache+"_asm"
-        disasm_cache = self.__bv.session_data['RopView']['cache'][disasm_key]
-        asm_cache = self.__bv.session_data['RopView']['cache'][asm_key]
+        caches = {"rop":self.cache.rop_cache,"jop":self.cache.jop_cache,"cop":self.cache.cop_cache,"sys":self.cache.sys_cache}
+        disasm_cache = caches[self.__cache].load_disasm()
+        asm_cache = caches[self.__cache].load_asm()
         
         # For progress bar
         iteration = 0
@@ -160,6 +178,6 @@ class GadgetSearch:
 
         for addr,value in asm_cache.items():
             update(iteration,full)
-            self.__bv.session_data['RopView']['gadget_asm'][addr] = value
-            self.__bv.session_data['RopView']['gadget_disasm'][addr] = disasm_cache[addr]
+            self.cache.gcache.store_asm({addr:value})
+            self.cache.gcache.store_disasm({addr:disasm_cache[addr]})
             iteration += 1

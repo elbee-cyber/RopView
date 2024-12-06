@@ -5,7 +5,7 @@ from .constants import *
 from binaryninja import show_message_box, run_progress_dialog, get_save_filename_input
 from PySide6.QtCore import QCoreApplication
 from .SearchFilter import SearchFilter
-from cache import cache
+from .cache import cache
 
 class GadgetRender:
     '''
@@ -99,7 +99,7 @@ class GadgetRender:
             self.__selected = self.__selected[0].text(1)
         self.clear_gadgets()
         if pool == None:
-            res = self.sort(self.bv.session_data['RopView']['gadget_disasm'].copy()).items()
+            res = self.sort(self.cache.gcache.load_disasm().copy()).items()
         else:
             res = self.sort(pool).items()
         self.render_gadgets(res)
@@ -143,7 +143,7 @@ class GadgetRender:
             item.setFont(2,font)
             item.setText(2,text)
             if self.dump:
-                item.setText(1,self.bv.session_data['RopView']['gadget_asm'][addr].hex())
+                item.setText(1,self.cache.gcache.load_asm()[addr].hex())
                 item.setForeground(1,QBrush(QColor(136, 136, 145, 255)))
             if text == self.__selected and not found:
                 self.__selectedItem = item

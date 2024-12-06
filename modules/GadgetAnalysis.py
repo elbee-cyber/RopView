@@ -2,6 +2,7 @@ from .constants import *
 from unicorn import *
 from unicorn.unicorn_const import *
 import struct
+from .cache import cache
 
 class GadgetAnalysis:
     '''
@@ -31,11 +32,12 @@ class GadgetAnalysis:
         self.addr = addr
         self.gadget_str = gadget_str
         self.bv = bv
+        self.cache = cache(bv)
 
         # The gadget asm
-        if addr not in bv.session_data['RopView']['gadget_asm']:
+        if addr not in self.cache.gcache.load_asm():
             return
-        self._gadget_Raw = bv.session_data['RopView']['gadget_asm'][addr]
+        self._gadget_Raw = self.cache.gcache.load_asm()[addr]
 
         # Gadget str split by instruction
         self.instructions = gadget_str.split(';')
@@ -492,14 +494,5 @@ class GadgetAnalysis:
         self.results.append(diff)
 
     def saveState(self):
-        return State(self.results,self.err,self.used_regs,self.instructions,self.prestate,self.last_access,self.end_state)
-
-class State:
-    def __init__(self, results, err, used_regs, instructions, prestate, last_access, end_state):
-        self.results = results
-        self.err = err 
-        self.used_regs = used_regs
-        self.instructions = instructions
-        self.prestate = prestate
-        self.last_access = last_access
-        self.end_state = end_state
+        return {"results":self.results,"err":self.err,"used_regs":self.used_regs,"instructions":self.instructions,"prestate":self.prestate,"last_access":self.last_access,"end_state":self.end_state}
+    

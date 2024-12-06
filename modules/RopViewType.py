@@ -9,7 +9,7 @@ from .GadgetRender import GadgetRender
 from .SearchFilter import SearchFilter
 from binaryninja import *
 from .constants import *
-import copy
+from .cache import cache
 
 class RopView(QScrollArea, View):
 	'''
@@ -25,19 +25,15 @@ class RopView(QScrollArea, View):
 
 		# Session data
 		binaryView.session_data['RopView'] = {}
-		binaryView.session_data['RopView']['cache'] = {}
-		binaryView.session_data['RopView']['cache']['rop_disasm'] = {}
-		binaryView.session_data['RopView']['cache']['rop_asm'] = {}
-		binaryView.session_data['RopView']['cache']['jop_disasm'] = {}
-		binaryView.session_data['RopView']['cache']['jop_asm'] = {} 
-		binaryView.session_data['RopView']['cache']['cop_disasm'] = {}
-		binaryView.session_data['RopView']['cache']['cop_asm'] = {}
-		binaryView.session_data['RopView']['cache']['sys_disasm'] = {}
-		binaryView.session_data['RopView']['cache']['sys_asm'] = {}
-		binaryView.session_data['RopView']['cache']['depth'] = 10
-		binaryView.session_data['RopView']['cache']['analysis'] = {}
+		binaryView.session_data['RopView']['depth'] = 10
 		binaryView.session_data['RopView']['analysis_enabled'] = True
 		binaryView.session_data['RopView']['search_initialized'] = False
+		self.cache = cache(binaryView)
+		try:
+			binaryView.query_metadata("RopView.rop_disasm")
+			print("Restored cache")
+		except KeyError:
+			self.cache.build()
 
 		# Base UI
 		QScrollArea.__init__(self, parent)
@@ -103,7 +99,7 @@ class RopView(QScrollArea, View):
 		Changes current prestate for future analysis
 		Reanalyzes currently selected gadget
 		'''
-		self.binaryView.session_data['RopView']['cache']['analysis'] = {}
+		self.cache.analysis_cache.flush()
 		self.curr_prestate = self.renderer.buildPrestate()
 		if len(self.ui.gadgetPane.selectedItems()) > 0:
 			self.startAnalysis()
@@ -112,9 +108,9 @@ class RopView(QScrollArea, View):
 		mainthread.execute_on_main_thread(self.gadgetAnalysis)
 
 	def querySetup(self):
-		if len(self.binaryView.session_data['RopView']['gadget_disasm']) > 0 and self.searchfilter == None:
+		if not self.cache.gcache.isEmpty() and self.searchfilter == None:
 			self.searchfilter = SearchFilter(self.binaryView,self.ui,self.renderer)
-			self.ui.semanticBox.setMaximum(len(self.binaryView.session_data['RopView']['gadget_disasm']))
+			self.ui.semanticBox.setMaximum(len(self.cache.gcache.load_disasm()))
 			self.searchfilter.query()
 		
 	def gadgetAnalysis(self):
@@ -124,7 +120,7 @@ class RopView(QScrollArea, View):
 		if not self.binaryView.session_data['RopView']['analysis_enabled']:
 			return
 
-		if len(self.ui.gadgetPane.selectedItems()) == 0 or self.binaryView.session_data['RopView']['gadget_disasm'] == {} or self.binaryView.session_data['RopView']['gadget_asm'] == {}:
+		if len(self.ui.gadgetPane.selectedItems()) == 0 or self.cache.gcache.isEmpty():
 			self.ui.detailPane.clear()
 			return
 
@@ -134,14 +130,14 @@ class RopView(QScrollArea, View):
 		gadget_str = self.ui.gadgetPane.selectedItems()[0].text(2)
 
 		# GadgetAnalysis
-		if addr in self.binaryView.session_data['RopView']['cache']['analysis']:
-			ga = self.binaryView.session_data['RopView']['cache']['analysis'][addr]
-			effects = ga.results
+		if addr in self.cache.analysis_cache.load():
+			ga = self.cache.analysis_cache.load()[addr]
+			effects = ga["results"]
 		else:
 			ga = GadgetAnalysis(self.binaryView, addr, gadget_str)
 			ga.set_prestate(self.curr_prestate)
 			effects = ga.analyze()[0]
-			self.binaryView.session_data['RopView']['cache']['analysis'][addr] = ga.saveState()
+			self.cache.analysis_cache.store({addr:ga.saveState()})
 		self.renderAnalysisPane(effects,ga)
 
 	def renderAnalysisPane(self,effects,ga):
@@ -157,6 +153,9 @@ class RopView(QScrollArea, View):
 		beforeLabel.setText("Before analysis:")
 		beforeLabel.setFont(labelFont)
 		detailPane.addItem(beforeLabel)
+
+		if isinstance(ga,dict):
+			ga = State(ga["results"], ga["err"], ga["used_regs"], ga["instructions"], ga["prestate"], ga["last_access"], ga["end_state"])
 
 		if ga.used_regs == {}:
 			item = QListWidgetItem(detailPane)
@@ -266,6 +265,16 @@ class RopView(QScrollArea, View):
 
 	def getData(self):
 		return self.binaryView
+
+class State:
+		def __init__(self, results, err, used_regs, instructions, prestate, last_access, end_state):
+			self.results = results
+			self.err = err
+			self.used_regs = used_regs
+			self.instructions = instructions
+			self.prestate = prestate
+			self.last_access = last_access
+			self.end_state = end_state
 
 class RopViewType(ViewType):
 	def __init__(self):

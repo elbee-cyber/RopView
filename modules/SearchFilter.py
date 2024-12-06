@@ -3,12 +3,14 @@ from .GadgetSearch import *
 from .GadgetAnalysis import *
 import pandas as pd
 import re,random
+from .cache import cache
 
 class SearchFilter:
 
     def __init__(self, bv, ui, renderer):
         self.ui = ui
         self.bv = bv
+        self.cache = cache(bv)
         self.ui.lineEdit.returnPressed.connect(self.query)
         self.renderer = renderer
         self.regs = arch[self.bv.arch.name]['prestateOpts']
@@ -137,7 +139,7 @@ class SearchFilter:
         pool = {}
         for addr in results:
             addr = int(addr)
-            pool[addr] = self.bv.session_data['RopView']['gadget_disasm'][addr]
+            pool[addr] = self.cache.gcache.load_disasm()[addr]
         self.renderer.update_and_sort(pool)
 
     def semantic(self,update):
@@ -170,24 +172,24 @@ class SearchFilter:
 
             contains_interrupt = False
             for interrupt in arch[self.bv.arch.name]['blacklist']:
-                if interrupt in self.bv.session_data['RopView']['gadget_disasm'][addr]:
+                if interrupt in self.cache.gcache.load_disasm()[addr]:
                     contains_interrupt = True
                     break
             if contains_interrupt:
                 continue
 
             # Populate [regs]
-            if addr in self.bv.session_data['RopView']['cache']['analysis']:
-                reg_vals = self.bv.session_data['RopView']['cache']['analysis'][addr].end_state
+            if addr in self.cache.analysis_cache.load():
+                reg_vals = self.cache.analysis_cache.load()[addr]['end_state']
             else:
-                ga = GadgetAnalysis(self.bv, addr, self.bv.session_data['RopView']['gadget_disasm'][addr])
+                ga = GadgetAnalysis(self.bv, addr, self.cache.gcache.load_disasm()[addr])
                 ga.set_prestate(prestate)
                 try:
                     ga.analyze()
                 except:
                     break
                 reg_vals = ga.end_state
-                self.bv.session_data['RopView']['cache']['analysis'][addr] = ga.saveState()
+                self.cache.analysis_cache.store({addr:ga.saveState()})
                 del ga
 
             contains_used = False
@@ -227,15 +229,15 @@ class SearchFilter:
         inst_cnt = []
 
         # Append bytes and size searchables
-        for addr,asm in self.bv.session_data['RopView']['gadget_asm'].items():
+        for addr,asm in self.cache.gcache.load_asm().items():
             raw.append(asm.hex())
-            inst_cnt.append(self.bv.session_data['RopView']['gadget_disasm'][addr].count(';'))
+            inst_cnt.append(self.cache.gcache.load_disasm()[addr].count(';'))
 
         gadget_data = {
-            'addr':list(self.bv.session_data['RopView']['gadget_asm'].keys()),
+            'addr':list(self.cache.gcache.load_asm().keys()),
             'bytes':raw,
             'inst_cnt':inst_cnt,
-            'disasm':list(self.bv.session_data['RopView']['gadget_disasm'].values())
+            'disasm':list(self.cache.gcache.load_disasm().values())
         }
         self.full_df = pd.DataFrame(gadget_data)
         self.bv.session_data['RopView']['dataframe'] = self.full_df

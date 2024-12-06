@@ -1,25 +1,25 @@
 class cache:
     def __init__(self,bv):
         self.bv = bv
+        self.rop_cache = rop_cache(self.bv)
+        self.cop_cache = cop_cache(self.bv)
+        self.jop_cache = jop_cache(self.bv)
+        self.sys_cache = sys_cache(self.bv)
+        self.gcache = gcache(self.bv)
+        self.analysis_cache = analysis_cache(self.bv)
 
     def build(self):
         self.bv.store_metadata("RopView.rop_asm",{})
         self.bv.store_metadata("RopView.rop_disasm",{})
-        self.rop_cache = rop_cache(self.bv)
         self.bv.store_metadata("RopView.cop_asm",{})
         self.bv.store_metadata("RopView.cop_disasm",{})
-        self.cop_cache = cop_cache(self.bv)
         self.bv.store_metadata("RopView.jop_asm",{})
         self.bv.store_metadata("RopView.jop_disasm",{})
-        self.jop_cache = jop_cache(self.bv)
         self.bv.store_metadata("RopView.sys_asm",{})
         self.bv.store_metadata("RopView.sys_disasm",{})
-        self.sys_cache = sys_cache(self.bv)
         self.bv.store_metadata("RopView.g_asm",{})
         self.bv.store_metadata("RopView.g_disasm",{})
-        self.gcache = gcache(self.bv)
         self.bv.store_metadata("RopView.analysis",{})
-        self.analysis_cache = analysis_cache(self.bv)
 
     def fullflush(self):
         self.rop_cache.flush()
@@ -36,17 +36,24 @@ class rop_cache:
     def isEmpty(self):
         return len(self.bv.query_metadata("RopView.rop_disasm")) + len(self.bv.query_metadata("RopView.rop_asm")) == 0
 
-    def store_disasm(self, item: dict) -> dict:
-        self.bv.store_metadata("RopView.rop_disasm",self.bv.query_metadata("RopView.rop_disasm") | item)
+    def store_disasm(self, item):
+        tmp = self.bv.query_metadata("RopView.rop_disasm")
+        tmp.update(item)
+        self.bv.store_metadata("RopView.rop_disasm",tmp)
 
-    def store_asm(self, item: dict) -> dict:
-        self.bv.store_metadata("RopView.rop_asm",self.bv.query_metadata("RopView.rop_asm") | item)
+    def store_asm(self, item):
+        tmp = self.bv.query_metadata("RopView.rop_asm")
+        tmp.update(item)
+        self.bv.store_metadata("RopView.rop_asm",tmp)
 
-    def load_disasm(self, addr: int) -> int:
-        return self.bv.query_metadata("RopView.rop_disasm")[addr]
+    def load_disasm(self):
+        # weird metadata bug converts dict keys to strings
+        tmp = self.bv.query_metadata("RopView.rop_disasm")
+        return {int(k):v for k,v in tmp.items()}
 
-    def load_asm(self, addr: int) -> int:
-        return self.bv.query_metadata("RopView.rop_asm")[addr]
+    def load_asm(self):
+        tmp = self.bv.query_metadata("RopView.rop_asm")
+        return {int(k):v for k,v in tmp.items()}
 
     def flush(self):
         self.bv.remove_metadata("RopView.rop_asm")
@@ -62,17 +69,23 @@ class cop_cache:
     def isEmpty(self):
         return len(self.bv.query_metadata("RopView.cop_disasm")) + len(self.bv.query_metadata("RopView.cop_asm")) == 0
 
-    def store_disasm(self, item: dict) -> dict:
-        self.bv.store_metadata("RopView.cop_disasm",self.bv.query_metadata("RopView.cop_disasm") | item)
+    def store_disasm(self, item):
+        tmp = self.bv.query_metadata("RopView.cop_disasm")
+        tmp.update(item)
+        self.bv.store_metadata("RopView.cop_disasm",tmp)
 
-    def store_asm(self, item: dict) -> dict:
-        self.bv.store_metadata("RopView.cop_asm",self.bv.query_metadata("RopView.cop_asm") | item)
+    def store_asm(self, item):
+        tmp = self.bv.query_metadata("RopView.cop_asm")
+        tmp.update(item)
+        self.bv.store_metadata("RopView.cop_asm",tmp)
 
-    def load_disasm(self, addr: int) -> int:
-        return self.bv.query_metadata("RopView.cop_disasm")[addr]
+    def load_disasm(self):
+        tmp = self.bv.query_metadata("RopView.cop_disasm")
+        return {int(k):v for k,v in tmp.items()}
 
-    def load_asm(self, addr: int) -> int:
-        return self.bv.query_metadata("RopView.cop_asm")[addr]
+    def load_asm(self):
+        tmp = self.bv.query_metadata("RopView.cop_asm")
+        return {int(k):v for k,v in tmp.items()}
 
     def flush(self):
         self.bv.remove_metadata("RopView.cop_asm")
@@ -88,17 +101,23 @@ class jop_cache:
     def isEmpty(self):
         return len(self.bv.query_metadata("RopView.jop_disasm")) + len(self.bv.query_metadata("RopView.jop_asm")) == 0
 
-    def store_disasm(self, item: dict) -> dict:
-        self.bv.store_metadata("RopView.jop_disasm",self.bv.query_metadata("RopView.jop_disasm") | item)
+    def store_disasm(self, item):
+        tmp = self.bv.query_metadata("RopView.jop_disasm")
+        tmp.update(item)
+        self.bv.store_metadata("RopView.jop_disasm",tmp)
 
-    def store_asm(self, item: dict) -> dict:
-        self.bv.store_metadata("RopView.jop_asm",self.bv.query_metadata("RopView.jop_asm") | item)
+    def store_asm(self, item):
+        tmp = self.bv.query_metadata("RopView.jop_asm")
+        tmp.update(item)
+        self.bv.store_metadata("RopView.jop_asm",tmp)
 
-    def load_disasm(self, addr: int) -> int:
-        return self.bv.query_metadata("RopView.jop_disasm")[addr]
+    def load_disasm(self):
+        tmp = self.bv.query_metadata("RopView.jop_disasm")
+        return {int(k):v for k,v in tmp.items()}
 
-    def load_asm(self, addr: int) -> int:
-        return self.bv.query_metadata("RopView.jop_asm")[addr]
+    def load_asm(self):
+        tmp = self.bv.query_metadata("RopView.jop_asm")
+        return {int(k):v for k,v in tmp.items()}
 
     def flush(self):
         self.bv.remove_metadata("RopView.jop_asm")
@@ -114,17 +133,23 @@ class sys_cache:
     def isEmpty(self):
         return len(self.bv.query_metadata("RopView.sys_disasm")) + len(self.bv.query_metadata("RopView.sys_asm")) == 0
 
-    def store_disasm(self, item: dict) -> dict:
-        self.bv.store_metadata("RopView.sys_disasm",self.bv.query_metadata("RopView.sys_disasm") | item)
+    def store_disasm(self, item):
+        tmp = self.bv.query_metadata("RopView.sys_disasm")
+        tmp.update(item)
+        self.bv.store_metadata("RopView.sys_disasm",tmp)
 
-    def store_asm(self, item: dict) -> dict:
-        self.bv.store_metadata("RopView.sys_asm",self.bv.query_metadata("RopView.sys_asm") | item)
+    def store_asm(self, item):
+        tmp = self.bv.query_metadata("RopView.sys_asm")
+        tmp.update(item)
+        self.bv.store_metadata("RopView.sys_asm",tmp)
 
-    def load_disasm(self, addr: int) -> int:
-        return self.bv.query_metadata("RopView.sys_disasm")[addr]
+    def load_disasm(self):
+        tmp = self.bv.query_metadata("RopView.sys_disasm")
+        return {int(k):v for k,v in tmp.items()}
 
-    def load_asm(self, addr: int) -> int:
-        return self.bv.query_metadata("RopView.sys_asm")[addr]
+    def load_asm(self):
+        tmp = self.bv.query_metadata("RopView.sys_asm")
+        return {int(k):v for k,v in tmp.items()}
 
     def flush(self):
         self.bv.remove_metadata("RopView.sys_asm")
@@ -140,17 +165,23 @@ class gcache:
     def isEmpty(self):
         return len(self.bv.query_metadata("RopView.g_disasm")) + len(self.bv.query_metadata("RopView.g_asm")) == 0
 
-    def store_disasm(self, item: dict) -> dict:
-        self.bv.store_metadata("RopView.g_disasm",self.bv.query_metadata("RopView.g_disasm") | item)
+    def store_disasm(self, item):
+        tmp = self.bv.query_metadata("RopView.g_disasm")
+        tmp.update(item)
+        self.bv.store_metadata("RopView.g_disasm",tmp)
 
-    def store_asm(self, item: dict) -> dict:
-        self.bv.store_metadata("RopView.g_asm",self.bv.query_metadata("RopView.g_asm") | item)
+    def store_asm(self, item):
+        tmp = self.bv.query_metadata("RopView.g_asm")
+        tmp.update(item)
+        self.bv.store_metadata("RopView.g_asm",tmp)
 
-    def load_disasm(self, addr: int) -> int:
-        return self.bv.query_metadata("RopView.g_disasm")[addr]
+    def load_disasm(self):
+        tmp = self.bv.query_metadata("RopView.g_disasm")
+        return {int(k):v for k,v in tmp.items()}
 
-    def load_asm(self, addr: int) -> int:
-        return self.bv.query_metadata("RopView.g_asm")[addr]
+    def load_asm(self):
+        tmp = self.bv.query_metadata("RopView.g_asm")
+        return {int(k):v for k,v in tmp.items()}
 
     def flush(self):
         self.bv.remove_metadata("RopView.g_asm")
@@ -166,11 +197,14 @@ class analysis_cache:
     def isEmpty(self):
         return len(self.bv.query_metadata("RopView.analysis")) == 0
 
-    def store(self, item: dict) -> dict:
-        self.bv.store_metadata("RopView.analysis",self.bv.query_metadata("RopView.analysis") | item)
+    def store(self, item):
+        tmp = self.bv.query_metadata("RopView.analysis")
+        tmp.update(item)
+        self.bv.store_metadata("RopView.analysis",tmp)
 
-    def load(self, addr: int) -> int:
-        return self.bv.query_metadata("RopView.analysis")[addr]
+    def load(self):
+        tmp = self.bv.query_metadata("RopView.analysis")
+        return {int(k):v for k,v in tmp.items()}
 
     def flush(self):
         self.bv.remove_metadata("RopView.analysis")
