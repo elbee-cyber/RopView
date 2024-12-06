@@ -56,7 +56,7 @@ class GadgetRender:
         self.ui.jopOpt.clicked.connect(self.prepareJOP)
         self.ui.sysOpt.clicked.connect(self.preparesys)
         self.ui.dumpOpt.clicked.connect(self.prepareDump)
-        self.ui.clearCacheButton.clicked.connect(self.clearCache)
+        self.ui.clearCacheButton.clicked.connect(self.flush)
         self.ui.reloadButton.clicked.connect(self.gsearch)
         self.ui.exportButton.clicked.connect(self.export_gadgets)
         self.__selectedItem = None
@@ -342,13 +342,10 @@ class GadgetRender:
         cop = self.gs.cop
         self.repool(dep,rop,jop,cop,sys)
 
-    def __clearCache(self):
-        mainthread.execute_on_main_thread_and_wait(self.clearCache)
-
     def export_gadgets(self):
         self.bv.session_data['RopView']['dataframe'].to_csv(get_save_filename_input("filename:", "csv", "gadgets.csv"), sep='\t\t\t\t')
 
-    def clearCache(self):
+    def flush(self):
         self.bv.session_data['RopView']['cache']['rop_disasm'] = {}
         self.bv.session_data['RopView']['cache']['rop_asm'] = {}
         self.bv.session_data['RopView']['cache']['jop_disasm'] = {}
