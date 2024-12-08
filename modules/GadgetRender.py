@@ -346,15 +346,8 @@ class GadgetRender:
         self.bv.session_data['RopView']['dataframe'].to_csv(get_save_filename_input("filename:", "csv", "gadgets.csv"), sep='\t\t\t\t')
 
     def flush(self):
-        self.bv.session_data['RopView']['cache']['rop_disasm'] = {}
-        self.bv.session_data['RopView']['cache']['rop_asm'] = {}
-        self.bv.session_data['RopView']['cache']['jop_disasm'] = {}
-        self.bv.session_data['RopView']['cache']['jop_asm'] = {} 
-        self.bv.session_data['RopView']['cache']['cop_disasm'] = {}
-        self.bv.session_data['RopView']['cache']['cop_asm'] = {}
-        self.bv.session_data['RopView']['cache']['sys_disasm'] = {}
-        self.bv.session_data['RopView']['cache']['sys_asm'] = {}
-        show_message_box("Cache cleared","All gadget caches have been flushed")
+        fflush(self.bv)
+        show_message_box("Cache cleared","Gadget caches flushed")
 
     def gsearch(self):
         sys = self.gs.sys

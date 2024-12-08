@@ -243,3 +243,21 @@ def bitmode(arch):
 
 def debug_notify(msg):
     log_info(str(msg),'RopView - Debug')
+
+def fflush(bv):
+    bv.session_data['RopView']['cache']['rop_disasm'] = {}
+    bv.session_data['RopView']['cache']['rop_asm'] = {} 
+    bv.session_data['RopView']['cache']['jop_disasm'] = {}
+    bv.session_data['RopView']['cache']['jop_asm'] = {} 
+    bv.session_data['RopView']['cache']['cop_disasm'] = {}
+    bv.session_data['RopView']['cache']['cop_asm'] = {}
+    bv.session_data['RopView']['cache']['sys_disasm'] = {}
+    bv.session_data['RopView']['cache']['sys_asm'] = {}
+    bv.store_metadata("RopView.rop_disasm",bv.session_data['RopView']['cache']['rop_disasm'])
+    bv.store_metadata("RopView.rop_asm",bv.session_data['RopView']['cache']['rop_asm'])
+    bv.store_metadata("RopView.jop_disasm",bv.session_data['RopView']['cache']['jop_disasm'])
+    bv.store_metadata("RopView.jop_asm",bv.session_data['RopView']['cache']['jop_asm'])
+    bv.store_metadata("RopView.cop_disasm",bv.session_data['RopView']['cache']['cop_disasm'])
+    bv.store_metadata("RopView.cop_asm",bv.session_data['RopView']['cache']['cop_asm'])
+    bv.store_metadata("RopView.sys_disasm",bv.session_data['RopView']['cache']['sys_disasm'])
+    bv.store_metadata("RopView.sys_asm",bv.session_data['RopView']['cache']['sys_asm'])

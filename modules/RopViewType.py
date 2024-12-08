@@ -39,21 +39,6 @@ class RopView(QScrollArea, View):
 		binaryView.session_data['RopView']['analysis_enabled'] = True
 		binaryView.session_data['RopView']['search_initialized'] = False
 
-		# Restore saved caches
-		try:
-			binaryView.session_data['RopView']['cache']['rop_disasm'].update({int(k):v for k,v in binaryView.query_metadata("RopView.rop_disasm").items()})
-			binaryView.session_data['RopView']['cache']['rop_asm'].update({int(k):v for k,v in binaryView.query_metadata("RopView.rop_asm").items()})
-			binaryView.session_data['RopView']['cache']['jop_disasm'].update({int(k):v for k,v in binaryView.query_metadata("RopView.jop_disasm").items()})
-			binaryView.session_data['RopView']['cache']['jop_asm'].update({int(k):v for k,v in binaryView.query_metadata("RopView.jop_asm").items()})
-			binaryView.session_data['RopView']['cache']['cop_disasm'].update({int(k):v for k,v in binaryView.query_metadata("RopView.cop_disasm").items()})
-			binaryView.session_data['RopView']['cache']['cop_asm'].update({int(k):v for k,v in binaryView.query_metadata("RopView.cop_asm").items()})
-			binaryView.session_data['RopView']['cache']['sys_disasm'].update({int(k):v for k,v in binaryView.query_metadata("RopView.sys_disasm").items()})
-			binaryView.session_data['RopView']['cache']['sys_asm'].update({int(k):v for k,v in binaryView.query_metadata("RopView.sys_asm").items()})
-			binaryView.session_data['RopView']['gadget_disasm'].update({int(k):v for k,v in binaryView.query_metadata("RopView.gadget_disasm").items()})
-			binaryView.session_data['RopView']['gadget_asm'].update({int(k):v for k,v in binaryView.query_metadata("RopView.gadget_asm").items()})
-		except KeyError:
-			pass
-
 		# Base UI
 		QScrollArea.__init__(self, parent)
 		View.__init__(self)
@@ -64,6 +49,12 @@ class RopView(QScrollArea, View):
 		self.ui.setupUi(self)
 		self.ui.gadgetPane.hideColumn(1)
 		self.ui.gadgetPane.resizeColumnToContents(2)
+
+		# Restore saved caches
+		try:
+			run_progress_dialog("Loading from cache",False,self.loadCache)
+		except KeyError:
+			pass
 
 		# Support check
 		if binaryView.arch.name not in arch or arch[binaryView.arch.name] == {}:
@@ -98,6 +89,38 @@ class RopView(QScrollArea, View):
 				break
 			regedit.textChanged.connect(self.updatePrestate)
 			i += 1
+
+	def loadCache(self,update):
+		curr = 0
+		full = 10
+		self.binaryView.session_data['RopView']['cache']['rop_disasm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.rop_disasm").items()})
+		curr += 1
+		update(curr,full)
+		self.binaryView.session_data['RopView']['cache']['rop_asm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.rop_asm").items()})
+		curr += 1
+		update(curr,full)
+		self.binaryView.session_data['RopView']['cache']['jop_disasm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.jop_disasm").items()})
+		curr += 1
+		update(curr,full)
+		self.binaryView.session_data['RopView']['cache']['jop_asm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.jop_asm").items()})
+		curr += 1
+		update(curr,full)
+		self.binaryView.session_data['RopView']['cache']['cop_disasm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.cop_disasm").items()})
+		curr += 1
+		update(curr,full)
+		self.binaryView.session_data['RopView']['cache']['cop_asm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.cop_asm").items()})
+		curr += 1
+		update(curr,full)
+		self.binaryView.session_data['RopView']['cache']['sys_disasm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.sys_disasm").items()})
+		curr += 1
+		update(curr,full)
+		self.binaryView.session_data['RopView']['cache']['sys_asm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.sys_asm").items()})
+		curr += 1
+		update(curr,full)
+		self.binaryView.session_data['RopView']['gadget_disasm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.gadget_disasm").items()})
+		curr += 1
+		update(curr,full)
+		self.binaryView.session_data['RopView']['gadget_asm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.gadget_asm").items()})
 
 	def goto_address(self, item, column):
 		'''

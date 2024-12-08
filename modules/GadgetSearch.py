@@ -91,7 +91,7 @@ class GadgetSearch:
                 if update(curr,full) == False:
                     self.__bv.session_data['RopView']['gadget_disasm'] = {}
                     self.__bv.session_data['RopView']['gadget_asm'] = {}
-                    self.flush()
+                    fflush(self.__bv)
                     return False
 
                 # Confirm the gadget site contains the current control instruction
@@ -182,13 +182,3 @@ class GadgetSearch:
             self.__bv.session_data['RopView']['gadget_asm'][addr] = value
             self.__bv.session_data['RopView']['gadget_disasm'][addr] = disasm_cache[addr]
             iteration += 1
-
-    def flush(self, extra=None):
-        self.__bv.session_data['RopView']['cache']['rop_disasm'] = {}
-        self.__bv.session_data['RopView']['cache']['rop_asm'] = {} 
-        self.__bv.session_data['RopView']['cache']['jop_disasm'] = {}
-        self.__bv.session_data['RopView']['cache']['jop_asm'] = {} 
-        self.__bv.session_data['RopView']['cache']['cop_disasm'] = {}
-        self.__bv.session_data['RopView']['cache']['cop_asm'] = {}
-        self.__bv.session_data['RopView']['cache']['sys_disasm'] = {}
-        self.__bv.session_data['RopView']['cache']['sys_asm'] = {}
