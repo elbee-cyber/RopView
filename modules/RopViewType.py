@@ -26,6 +26,8 @@ class RopView(QScrollArea, View):
 		# Session data
 		binaryView.session_data['RopView'] = {}
 		binaryView.session_data['RopView']['cache'] = {}
+		binaryView.session_data['RopView']['gadget_disasm'] = {}
+		binaryView.session_data['RopView']['gadget_asm'] = {}
 		binaryView.session_data['RopView']['cache']['rop_disasm'] = {}
 		binaryView.session_data['RopView']['cache']['rop_asm'] = {}
 		binaryView.session_data['RopView']['cache']['jop_disasm'] = {}

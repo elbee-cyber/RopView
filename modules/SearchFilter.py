@@ -17,6 +17,7 @@ class SearchFilter:
     def query(self):
         self.renderer.ui.resultsLabel.setText('')
         query = self.ui.lineEdit.text()
+        gaveAttr = False
 
         # Empited query, return normal
         if query == '':
@@ -27,6 +28,7 @@ class SearchFilter:
         if 'disasm' in query:
             if 'disasm.' in query:
                 query = query.replace('disasm.','disasm.str.')
+            gaveAttr = True
 
         # Format semicolons correctly
         query = query.replace(' ; ',';')
@@ -38,16 +40,19 @@ class SearchFilter:
                 query = query.replace('bytes.','bytes.str.')
             query = query.replace('0x','')
             query = query.replace('\\x','')
+            gaveAttr = True
 
         # Custom 
         if '.has(' in query:
             query = query.replace('.has(','.contains(')
+            gaveAttr = True
         
         # Parse presets
         ## ppr
         if 'ppr' in query:
             preset = "(disasm.str.count('pop')==2 and disasm.str.contains('ret') and inst_cnt==3)"
             query = query.replace('ppr',preset)
+            gaveAttr = True
 
         ## stack pivot
         if 'stack_pivot' in query:
@@ -56,6 +61,7 @@ class SearchFilter:
                 preset += "disasm.str.contains('"+pivot+"') or "
             preset = preset[:-3]+")"
             query = query.replace('stack_pivot',preset)
+            gaveAttr = True
 
         ## execve
         if 'execve' in query:
@@ -63,6 +69,7 @@ class SearchFilter:
                 query = query.replace('execve',arch[self.bv.arch.name]['execve'])
             except:
                 show_message_box("Preset does not exist","{} preset does not exist for {}".format('execve',self.bv.arch.name))
+            gaveAttr = True
 
         # jmp_reg
         if 'jmp_reg' in query:
@@ -71,6 +78,7 @@ class SearchFilter:
                 preset += "disasm.str.contains('jmp {}') or ".format(reg)
             preset = preset[:-4]+")"
             query = preset
+            gaveAttr = True
             
 
         # Space mismatching
@@ -88,6 +96,9 @@ class SearchFilter:
         query = query.replace('* ','*')
         query = query.replace('< ','<')
         query = query.replace('> ','>')
+        
+        if len(re.findall("=|-|\+|/|\*|<|>",query)) > 0:
+            gaveAttr = True
 
         # Semantic regs
         semantic = []
@@ -118,6 +129,15 @@ class SearchFilter:
                 for reg in semantic:
                     status += reg+", "
                 self.setStatus(status[:-2]+" canceled",True)
+
+        # Default search behaviour
+        if not gaveAttr and len(semantic) == 0:
+            if "\\x" in query or "0x" in query:
+                query = query.replace('0x','')
+                query = query.replace('\\x','')
+                query = "bytes.str.contains('{}')".format(query)
+            else:
+                query = "disasm.str.contains('{}')".format(query)
 
         # Save matching results
         results = self.attemptQuery(query)

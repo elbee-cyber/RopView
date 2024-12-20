@@ -164,7 +164,7 @@ class GadgetSearch:
         self.__bv.store_metadata("RopView.cop_asm",self.__bv.session_data['RopView']['cache']['cop_asm'])
         self.__bv.store_metadata("RopView.sys_disasm",self.__bv.session_data['RopView']['cache']['sys_disasm'])
         self.__bv.store_metadata("RopView.sys_asm",self.__bv.session_data['RopView']['cache']['sys_asm'])
-        self.__bv.store_metadata("RopView.gadget_disasm",self.__bv.session_data['RopView']['gadget_disasm'])
+        self.__bv.store_me2tadata("RopView.gadget_disasm",self.__bv.session_data['RopView']['gadget_disasm'])
         self.__bv.store_metadata("RopView.gadget_asm",self.__bv.session_data['RopView']['gadget_asm'])
 
     def load_from_cache(self, update):
