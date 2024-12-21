@@ -122,7 +122,6 @@ class SearchFilter:
             query = query.replace(replacement[0],replacement[1])
 
         if len(semantic) > 0:
-            self.__semanticQuery = query
             self.__semanticRegs = semantic
             if not run_progress_dialog("Performing semantic search",True,self.semantic):
                 status = "Semantic search on "
@@ -161,7 +160,7 @@ class SearchFilter:
         self.renderer.update_and_sort(pool)
 
     def semantic(self,update):
-        
+        print("Performing semantic search")
         allowed_regs = arch[self.bv.arch.name]['prestateOpts']
         prestate = self.renderer.buildPrestate()
         reg_vals = {}
@@ -172,7 +171,6 @@ class SearchFilter:
         for reg in self.__semanticRegs:
             include += "disasm.str.contains('"+reg+"') or "
         search_space = self.attemptQuery(include[:-4])
-        search_space_len = len(search_space)
         random.shuffle(search_space)
 
         # Prevent exhaustion
@@ -225,6 +223,9 @@ class SearchFilter:
                     continue
                 if self.full_df.loc[self.full_df['addr'] == addr, reg].iloc[0] != REG_NOT_ANALYZED:
                     continue
+                if not isinstance(val,int) and 'Full control' in val and reg=='rsp':
+                    print(val)
+                    print(addr,reg)
                 if not isinstance(val,int) and 'Full control' in val:
                     self.full_df.loc[self.full_df['addr'] == addr, reg] = REG_CONTROLLED
                 else:
@@ -232,6 +233,7 @@ class SearchFilter:
             del reg_vals
 
     def attemptQuery(self,query):
+        print(query)
         results = []
         try:
             resultsDF = self.full_df.query(query)

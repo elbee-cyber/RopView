@@ -68,6 +68,7 @@ class RopView(QScrollArea, View):
 		# Gadget Pane
 		self.renderer = GadgetRender(self.binaryView, self.ui)
 		self.curr_prestate = self.renderer.buildPrestate()
+		self.emu_queue = []
 
 		# Search
 		self.searchfilter = None
@@ -149,6 +150,15 @@ class RopView(QScrollArea, View):
 			self.startAnalysis()
 	
 	def startAnalysis(self):
+		# Prevent overspawn of emulations from scrolling
+		if len(self.emu_queue) > 5:
+			ga = self.emu_queue.pop(0)
+			try:
+				ga.uc_release(ga.uc)
+				ga.uc.emu_stop()
+				del ga
+			except:
+				pass
 		mainthread.execute_on_main_thread(self.gadgetAnalysis)
 
 	def querySetup(self):
@@ -179,6 +189,8 @@ class RopView(QScrollArea, View):
 			effects = ga.results
 		else:
 			ga = GadgetAnalysis(self.binaryView, addr, gadget_str)
+			# Add emu to queue
+			self.emu_queue.append(ga)
 			ga.set_prestate(self.curr_prestate)
 			effects = ga.analyze()[0]
 			self.binaryView.session_data['RopView']['cache']['analysis'][addr] = ga.saveState()
