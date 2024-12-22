@@ -96,34 +96,37 @@ class RopView(QScrollArea, View):
 	def loadCache(self,update):
 		curr = 0
 		full = 10
-		self.binaryView.session_data['RopView']['cache']['rop_disasm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.rop_disasm").items()})
-		curr += 1
-		update(curr,full)
-		self.binaryView.session_data['RopView']['cache']['rop_asm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.rop_asm").items()})
-		curr += 1
-		update(curr,full)
-		self.binaryView.session_data['RopView']['cache']['jop_disasm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.jop_disasm").items()})
-		curr += 1
-		update(curr,full)
-		self.binaryView.session_data['RopView']['cache']['jop_asm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.jop_asm").items()})
-		curr += 1
-		update(curr,full)
-		self.binaryView.session_data['RopView']['cache']['cop_disasm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.cop_disasm").items()})
-		curr += 1
-		update(curr,full)
-		self.binaryView.session_data['RopView']['cache']['cop_asm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.cop_asm").items()})
-		curr += 1
-		update(curr,full)
-		self.binaryView.session_data['RopView']['cache']['sys_disasm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.sys_disasm").items()})
-		curr += 1
-		update(curr,full)
-		self.binaryView.session_data['RopView']['cache']['sys_asm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.sys_asm").items()})
-		curr += 1
-		update(curr,full)
-		self.binaryView.session_data['RopView']['gadget_disasm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.gadget_disasm").items()})
-		curr += 1
-		update(curr,full)
-		self.binaryView.session_data['RopView']['gadget_asm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.gadget_asm").items()})
+		try:
+			self.binaryView.session_data['RopView']['cache']['rop_disasm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.rop_disasm").items()})
+			curr += 1
+			update(curr,full)
+			self.binaryView.session_data['RopView']['cache']['rop_asm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.rop_asm").items()})
+			curr += 1
+			update(curr,full)
+			self.binaryView.session_data['RopView']['cache']['jop_disasm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.jop_disasm").items()})
+			curr += 1
+			update(curr,full)
+			self.binaryView.session_data['RopView']['cache']['jop_asm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.jop_asm").items()})
+			curr += 1
+			update(curr,full)
+			self.binaryView.session_data['RopView']['cache']['cop_disasm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.cop_disasm").items()})
+			curr += 1
+			update(curr,full)
+			self.binaryView.session_data['RopView']['cache']['cop_asm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.cop_asm").items()})
+			curr += 1
+			update(curr,full)
+			self.binaryView.session_data['RopView']['cache']['sys_disasm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.sys_disasm").items()})
+			curr += 1
+			update(curr,full)
+			self.binaryView.session_data['RopView']['cache']['sys_asm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.sys_asm").items()})
+			curr += 1
+			update(curr,full)
+			self.binaryView.session_data['RopView']['gadget_disasm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.gadget_disasm").items()})
+			curr += 1
+			update(curr,full)
+			self.binaryView.session_data['RopView']['gadget_asm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.gadget_asm").items()})
+		except:
+			return
 
 	def goto_address(self, item, column):
 		'''
@@ -159,13 +162,13 @@ class RopView(QScrollArea, View):
 				del ga
 			except:
 				pass
-		mainthread.execute_on_main_thread(self.gadgetAnalysis)
+		worker_interactive_enqueue(self.gadgetAnalysis)
 
 	def querySetup(self):
-		if len(self.binaryView.session_data['RopView']['gadget_disasm']) > 0 and self.searchfilter == None:
+		if len(self.binaryView.session_data['RopView']['gadget_disasm']) > 0 and self.searchfilter is None:
 			self.searchfilter = SearchFilter(self.binaryView,self.ui,self.renderer)
 			self.ui.semanticBox.setMaximum(len(self.binaryView.session_data['RopView']['gadget_disasm']))
-			self.searchfilter.query()
+			self.searchfilter.spawnQuery()
 		
 	def gadgetAnalysis(self):
 		'''

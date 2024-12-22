@@ -96,13 +96,13 @@ class GadgetRender:
         if isSelected:
             self.__selected = self.__selected[0].text(1)
         self.clear_gadgets()
-        if pool == None:
+        if pool is None:
             res = self.sort(self.bv.session_data['RopView']['gadget_disasm'].copy()).items()
         else:
             res = self.sort(pool).items()
         self.render_gadgets(res)
         self.bv.session_data['RopView']['analysis_enabled'] = True
-        if self.__selectedItem != None:
+        if self.__selectedItem is not None:
             self.__selectedItem.setSelected(True)
 
     def repool(self,dep,rop,jop,cop,sys):

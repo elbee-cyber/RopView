@@ -208,14 +208,14 @@ class GadgetAnalysis:
             mappings.insert(0,-1)
             return GA_ERR_FETCH # Invalid execution at % (No recovery)
         if access == UC_MEM_READ_UNMAPPED:
-            if segment == None:
+            if segment is None:
                 mappings.insert(0,-1)
                 return GA_ERR_READ_UNMAPPED # Attempted to read unmapped memory at % (Speculative) (No recovery)'
             if self.err == GA_ERR_READ_UNRESOLVED:
                 mappings.insert(0,-1)
             return GA_ERR_READ_UNRESOLVED # Attempted to read unmapped memory at % (Realtime resolve)
         if access == UC_MEM_WRITE_UNMAPPED:
-            if segment == None:
+            if segment is None:
                 mappings.insert(0,-1)
                 return GA_ERR_WRITE_UNMAPPED # Attempted to write to unmapped memory (% to %) (Speculative) (No recovery)
             if self.err == GA_ERR_WRITE_UNRESOLVED:

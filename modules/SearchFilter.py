@@ -9,10 +9,14 @@ class SearchFilter:
     def __init__(self, bv, ui, renderer):
         self.ui = ui
         self.bv = bv
-        self.ui.lineEdit.returnPressed.connect(self.query)
+        self.ui.lineEdit.returnPressed.connect(self.spawnQuery)
         self.renderer = renderer
         self.regs = arch[self.bv.arch.name]['prestateOpts']
         self.buildDataFrame()
+
+    def spawnQuery(self):
+        self.setStatus("Processing query...")
+        execute_on_main_thread_and_wait(self.query)
 
     def query(self):
         self.renderer.ui.resultsLabel.setText('')
@@ -75,7 +79,7 @@ class SearchFilter:
         ## Transformation: ((reg[><=/*+-] or reg==FULL_CONTROL) and not reg==NOT_ANALYZED)
         replacements = []
         for reg in arch[self.bv.arch.name]['prestateOpts']:
-            if re.search(reg+'[\>\<=\-+\/*]',query) != None:
+            if re.search(reg+'[\>\<=\-+\/*]',query) is not None:
                 reg_matches = re.finditer(reg+'[\>\<=\-+\/*]{1,2}',query)
                 for match in reg_matches:
                     extract_reg = re.sub('[\>\<=\-+\/*]{1,2}','',match.group())
@@ -128,7 +132,6 @@ class SearchFilter:
         self.renderer.update_and_sort(pool)
 
     def semantic(self,update):
-        print("Performing semantic search")
         allowed_regs = arch[self.bv.arch.name]['prestateOpts']
         prestate = self.renderer.buildPrestate()
         reg_vals = {}
@@ -191,9 +194,6 @@ class SearchFilter:
                     continue
                 if self.full_df.loc[self.full_df['addr'] == addr, reg].iloc[0] != REG_NOT_ANALYZED:
                     continue
-                if not isinstance(val,int) and 'Full control' in val and reg=='rsp':
-                    print(val)
-                    print(addr,reg)
                 if not isinstance(val,int) and 'Full control' in val:
                     self.full_df.loc[self.full_df['addr'] == addr, reg] = REG_CONTROLLED
                 else:
@@ -201,7 +201,6 @@ class SearchFilter:
             del reg_vals
 
     def attemptQuery(self,query):
-        print(query)
         results = []
         try:
             resultsDF = self.full_df.query(query)
