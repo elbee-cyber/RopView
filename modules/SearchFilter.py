@@ -30,10 +30,6 @@ class SearchFilter:
                 query = query.replace('disasm.','disasm.str.')
             gaveAttr = True
 
-        # Format semicolons correctly
-        query = query.replace(' ; ',';')
-        query = query.replace(';',' ; ')
-
         # Parse bytes option
         if 'bytes' in query:
             if 'bytes.' in query:
@@ -42,44 +38,16 @@ class SearchFilter:
             query = query.replace('\\x','')
             gaveAttr = True
 
-        # Custom 
+        # .has() -> .contains() 
         if '.has(' in query:
             query = query.replace('.has(','.contains(')
             gaveAttr = True
         
         # Parse presets
-        ## ppr
-        if 'ppr' in query:
-            preset = "(disasm.str.count('pop')==2 and disasm.str.contains('ret') and inst_cnt==3)"
-            query = query.replace('ppr',preset)
-            gaveAttr = True
-
-        ## stack pivot
-        if 'stack_pivot' in query:
-            preset = "("
-            for pivot in arch[self.bv.arch.name]['stack_pivots']:
-                preset += "disasm.str.contains('"+pivot+"') or "
-            preset = preset[:-3]+")"
-            query = query.replace('stack_pivot',preset)
-            gaveAttr = True
-
-        ## execve
-        if 'execve' in query:
-            try:
-                query = query.replace('execve',arch[self.bv.arch.name]['execve'])
-            except:
-                show_message_box("Preset does not exist","{} preset does not exist for {}".format('execve',self.bv.arch.name))
-            gaveAttr = True
-
-        # jmp_reg
-        if 'jmp_reg' in query:
-            preset = "("
-            for reg in arch[self.bv.arch.name]['prestateOpts']:
-                preset += "disasm.str.contains('jmp {}') or ".format(reg)
-            preset = preset[:-4]+")"
-            query = preset
-            gaveAttr = True
-            
+        for preset in arch[self.bv.arch.name]['presets']:
+            if preset in query:
+                query = query.replace(preset,arch[self.bv.arch.name]['presets'][preset])
+                gaveAttr = True
 
         # Space mismatching
         query = query.replace(' =','=')
@@ -237,8 +205,9 @@ class SearchFilter:
         results = []
         try:
             resultsDF = self.full_df.query(query)
-        except:
+        except Exception as e:
             self.setStatus("Invalid query provided, please try again",True)
+            print(e)
             return results
         for index, row in resultsDF.iterrows():
             results.append(row['addr'])
