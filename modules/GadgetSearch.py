@@ -63,9 +63,6 @@ class GadgetSearch:
         # Capstone instance used for disassembly
         md = Cs(capstone_arch[self.__bv.arch.name], bitmode(self.__bv.arch.name))
 
-        # Used to check for duplicates
-        used_gadgets = []
-
         # update
         curr = self.__bv.start
         last_iter = 0
@@ -80,8 +77,11 @@ class GadgetSearch:
             while curr_site is not None:
                 # Find potential gadget site
                 curr_site = self.__bv.find_next_data(curr_site,ctrl[0])
+
                 if curr_site is None:
                     break
+                else:
+                    curr_site -= (arch[self.__bv.arch.name]['alignment']-len(ctrl[0]))
 
                 # Saved to increase after depth search
                 save = curr_site
@@ -100,9 +100,9 @@ class GadgetSearch:
                         if not self.__bv.get_segment_at(curr_site).executable:
                             break
                         else:
-                            curr_site = save-i
-
-                            insn = self.__bv.read(curr_site,i+ctrl[1])
+                            index = i*arch[self.__bv.arch.name]['alignment']
+                            curr_site = save-index
+                            insn = self.__bv.read(curr_site,index+ctrl[1])
                             disasm = ''
                             for val in md.disasm(insn,0x1000):
                                 disasm += val.mnemonic + ' ' + val.op_str + ' ; '
@@ -148,7 +148,7 @@ class GadgetSearch:
                             self.__bv.session_data['RopView']['gadget_asm'].update([(curr_site, insn)])
 
                 # Next address for search
-                curr_site = save+1
+                curr_site = save+arch[self.__bv.arch.name]['alignment']
         
         # Save metadata to bv
         worker_priority_enqueue(self.saveCache)

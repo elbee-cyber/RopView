@@ -92,7 +92,7 @@ i386 = {
         'esi':[' si'],
         'edi':[' di']
     },
-    'alignment':0
+    'alignment':1
 }
 
 amd64 = {
@@ -145,84 +145,11 @@ amd64 = {
         'r14':['r14d','r14w','r14b'],
         'r15':['r15d','r15w','r15b']
     },
-    'alignment':0
+    'alignment':1
 }
 amd64['uregs'].update(i386['uregs'])
 
-'''
-i386, amd64
-'''
-cop_x86 = (
-	(b'\xff',2,b'\xff[\x10\x11\x12\x13\x16\x17]','call'),					            # call [reg]
-	#(b'\xf2\xff',3,b'\xf2\xff[\x10\x11\x12\x13\x16\x17]','call'),				        # bnd call [reg]
-	(b'\xff',2,b'\xff[\xd0\xd1\xd2\xd3\xd4\xd6\xd7]','call'),				            # call reg
-	#(b'\xf2\xff',3,b'\xf2\xff[\xd0\xd1\xd2\xd3\xd4\xd6\xd7]','call'),			        # bnd call reg
-	(b'\xff\x14\x24',3,b'\xff\x14\x24','call'),						                    # call [rsp]
-	#(b'\xf2\xff\x14\x24',4,b'\xf2\xff\x14\x24','call'),				                # bnd call [rsp]
-	(b'\xff\x55\x00',3,b'\xff\x55\x00','call'),						                    # call [rbp]
-	#(b'\xf2\xff\x55\x00',4,b'\xf2\xff\x55\x00','call'),					            # bnd call [rbp]
-	(b'\xff',3,b'\xff[\x50-\x53\x55-\x57][\x00-\xff]{1}','call'),				        # call [reg+n]
-	#(b'\xf2\xff',4,b'\xf2\xff[\x50-\x53\x55-\x57][\x00-\xff]{1}','call'),	            # bnd call [reg+n]
-	(b'\xff',6,b'\xff[\x90\x91\x92\x93\x94\x96\x97][\x00-\x0ff]{4}','call')		        # call [reg+n]
-)
-
-rop_x86 = (
-	(b'\xc3',1,b'\xc3','ret'),								                            # ret
-	(b'\xc2',3,b'\xc2[\x00-\xff]{2}','ret')							                    # ret n
-)
-
-rop_arm32 = (
-	(b'\xe8',4,b'\xe8[\x10-\x1e\x30-\x3e\x50-\x5e\x70-\x7e\x90-\x9e\xb0-\xbe\xd0-\xde\xf0-\xfe][\x80-\xff][\x00-\xff]','pop'), # pop {[reg]*,pc}
-    (b'\xe9',4,b'\xe9[\x10-\x1e\x30-\x3e\x50-\x5e\x70-\x7e\x90-\x9e\xb0-\xbe\xd0-\xde\xf0-\xfe][\x80-\xff][\x00-\xff]','ldm') # ldm [reg], {*,pc}
-)
-
-jop_arm32 = (
-	(b'\xe1\x2f\xff',4,b'\xe1\x2f\xff[\x10-\x1e]','bx'), # bx reg
-    (b'\xe1\x2f\xff',4,b'\xe1\x2f\xff[\x30-\x3e]','blx'), # blx reg
-    (b'\xe1\xa0\xf0',4,b'\xe1\xa0\xf0[\x00-\x0f]','mov'), # mov pc, reg
-    (b'\xe8\xdb\x80\x01',4,b'\xe8\xdb\x80\x01','ldm') # ldm sp!, {pc}
-)
-
-jop_x86 = (
-	(b'\xff',2,b'\xff[\x20\x21\x22\x23\x26\x27]','jmp'),					            # jmp [reg]
-	#(b'\xf2\xff',3,b'\xf2\xff[\x20\x21\x22\x23\x26\x27]','jmp'),				        # bnd jmp [reg]
-	(b'\xff',2,b'\xff[\xe0\xe1\xe2\xe3\xe4\xe6\xe7]','jmp'),				            # jmp reg
-	#(b'\xf2\xff',3,b'\xf2\xff[\xe0\xe1\xe2\xe3\xe4\xe6\xe7]','jmp'),			        # bnd jmp reg
-	(b'\xff\x24\x24',3,b'\xff\x24\x24','jmp'),						                    # jmp [rsp]
-	#(b'\xf2\xff\x24\x24',4,b'\xf2\xff\x24\x24','jmp'),					                # bnd jmp [rsp]
-	(b'\xff\x65\x00',3,b'\xff\x65\x00','jmp'),						                    # jmp [rbp]
-	#(b'\xf2\xff\x65\x00',4,b'\xf2\xff\x65\x00','jmp'),					                # bnd jmp [rbp]
-	(b'\xff',6,b'\xff[\xa0\xa1\xa2\xa3\xa6\xa7][\x00-\x0ff]{4}','jmp'),			        # jmp [reg+n]
-	#(b'\xf2\xff',7,b'\xf2\xff[\xa0\xa1\xa2\xa3\xa6\xa7][\x00-\x0ff]{4}','jmp'),        # bnd jmp [reg+n]
-	(b'\xff\xa4\x24',7,b'\xff\xa4\x24[\x00-\xff]{4}','jmp'),				            # jmp [rsp+n]
-	#(b'\xf2\xff\xa4\x24',8,b'\xf2\xff\xa4\x24[\x00-\xff]{4}','jmp'),			        # bnd jmp [rsp+n]
-	(b'\xff',3,b'\xff[\x60-\x63\x65-\x67][\x00-\xff]{1}','jmp')				            # jmp [reg+n]
-	#(b'\xf2\xff',4,b'\xf2\xff[\x60-\x63\x65-\x67][\x00-\xff]{1}','jmp')		        # bnd jmp [reg+n]
-)
-
-sys_x86 = (
-	(b'\xcd\x80',2,b'\xcd\x80','int 0x80'),							                    # int 0x80
-	(b'\x0f\x05',2,b'\x0f\x05','syscall'),							                    # syscall
-	(b'\x0f\x34',2,b'\0x0f\x34','sysenter'),						                    # sysenter
-	(b'\x65\xff\x15\x10\x00\x00\x00',7,b'\x65\xff\x15\x10\x00\x00\x00','call gs:[10]')	# call gs:[10]
-)
-
-mnemonics_x86 = ('jmp','call','ret','retf')
-
-ctrl_x86 = {
-    "rop":rop_x86,
-    "jop":jop_x86,
-    "cop":cop_x86,
-    "sys":sys_x86,
-    "mnemonics":mnemonics_x86
-}
-
-gadgets = {
-    "x86":ctrl_x86,
-    "x86_64":ctrl_x86
-}
-
-arm32 = {
+armv7 = {
     'bitmode':32,
     'registers':['r0','r1','r2','r3','r4','r5','r6','r7','r8','r9','r10','r11','r12','lr'],
     'sp':['sp'],
@@ -256,34 +183,124 @@ arm32 = {
     'alignment':4
 }
 
+'''
+i386, amd64
+'''
+cop_x86 = (
+	(b'\xff',2,b'\xff[\x10\x11\x12\x13\x16\x17]','call'),					            # call [reg]
+	#(b'\xf2\xff',3,b'\xf2\xff[\x10\x11\x12\x13\x16\x17]','call'),				        # bnd call [reg]
+	(b'\xff',2,b'\xff[\xd0\xd1\xd2\xd3\xd4\xd6\xd7]','call'),				            # call reg
+	#(b'\xf2\xff',3,b'\xf2\xff[\xd0\xd1\xd2\xd3\xd4\xd6\xd7]','call'),			        # bnd call reg
+	(b'\xff\x14\x24',3,b'\xff\x14\x24','call'),						                    # call [rsp]
+	#(b'\xf2\xff\x14\x24',4,b'\xf2\xff\x14\x24','call'),				                # bnd call [rsp]
+	(b'\xff\x55\x00',3,b'\xff\x55\x00','call'),						                    # call [rbp]
+	#(b'\xf2\xff\x55\x00',4,b'\xf2\xff\x55\x00','call'),					            # bnd call [rbp]
+	(b'\xff',3,b'\xff[\x50-\x53\x55-\x57][\x00-\xff]{1}','call'),				        # call [reg+n]
+	#(b'\xf2\xff',4,b'\xf2\xff[\x50-\x53\x55-\x57][\x00-\xff]{1}','call'),	            # bnd call [reg+n]
+	(b'\xff',6,b'\xff[\x90\x91\x92\x93\x94\x96\x97][\x00-\x0ff]{4}','call')		        # call [reg+n]
+)
+
+rop_x86 = (
+	(b'\xc3',1,b'\xc3','ret'),								                            # ret
+	(b'\xc2',3,b'\xc2[\x00-\xff]{2}','ret')							                    # ret n
+)
+
+jop_x86 = (
+	(b'\xff',2,b'\xff[\x20\x21\x22\x23\x26\x27]','jmp'),					            # jmp [reg]
+	#(b'\xf2\xff',3,b'\xf2\xff[\x20\x21\x22\x23\x26\x27]','jmp'),				        # bnd jmp [reg]
+	(b'\xff',2,b'\xff[\xe0\xe1\xe2\xe3\xe4\xe6\xe7]','jmp'),				            # jmp reg
+	#(b'\xf2\xff',3,b'\xf2\xff[\xe0\xe1\xe2\xe3\xe4\xe6\xe7]','jmp'),			        # bnd jmp reg
+	(b'\xff\x24\x24',3,b'\xff\x24\x24','jmp'),						                    # jmp [rsp]
+	#(b'\xf2\xff\x24\x24',4,b'\xf2\xff\x24\x24','jmp'),					                # bnd jmp [rsp]
+	(b'\xff\x65\x00',3,b'\xff\x65\x00','jmp'),						                    # jmp [rbp]
+	#(b'\xf2\xff\x65\x00',4,b'\xf2\xff\x65\x00','jmp'),					                # bnd jmp [rbp]
+	(b'\xff',6,b'\xff[\xa0\xa1\xa2\xa3\xa6\xa7][\x00-\x0ff]{4}','jmp'),			        # jmp [reg+n]
+	#(b'\xf2\xff',7,b'\xf2\xff[\xa0\xa1\xa2\xa3\xa6\xa7][\x00-\x0ff]{4}','jmp'),        # bnd jmp [reg+n]
+	(b'\xff\xa4\x24',7,b'\xff\xa4\x24[\x00-\xff]{4}','jmp'),				            # jmp [rsp+n]
+	#(b'\xf2\xff\xa4\x24',8,b'\xf2\xff\xa4\x24[\x00-\xff]{4}','jmp'),			        # bnd jmp [rsp+n]
+	(b'\xff',3,b'\xff[\x60-\x63\x65-\x67][\x00-\xff]{1}','jmp')				            # jmp [reg+n]
+	#(b'\xf2\xff',4,b'\xf2\xff[\x60-\x63\x65-\x67][\x00-\xff]{1}','jmp')		        # bnd jmp [reg+n]
+)
+
+sys_x86 = (
+	(b'\xcd\x80',2,b'\xcd\x80','int 0x80'),							                    # int 0x80
+	(b'\x0f\x05',2,b'\x0f\x05','syscall'),							                    # syscall
+	(b'\x0f\x34',2,b'\0x0f\x34','sysenter'),						                    # sysenter
+	(b'\x65\xff\x15\x10\x00\x00\x00',7,b'\x65\xff\x15\x10\x00\x00\x00','call gs:[10]')	# call gs:[10]
+)
+
+mnemonics_x86 = ('jmp','call','ret','retf')
+
+rop_armv7 = (
+	(b'\xe8',4,b'\xe8[\x10-\x1e\x30-\x3e\x50-\x5e\x70-\x7e\x90-\x9e\xb0-\xbe\xd0-\xde\xf0-\xfe][\x80-\xff][\x00-\xff]','pop'), # pop {[reg]*,pc} BE
+    (b'\xe9',4,b'\xe9[\x10-\x1e\x30-\x3e\x50-\x5e\x70-\x7e\x90-\x9e\xb0-\xbe\xd0-\xde\xf0-\xfe][\x80-\xff][\x00-\xff]','ldm'), # ldm [reg], {*,pc} BE
+    (b'\xe8',4,b'[\x00-\xff][\x80-\xff][\x10-\x1e\x30-\x3e\x50-\x5e\x70-\x7e\x90-\x9e\xb0-\xbe\xd0-\xde\xf0-\xfe]\xe8','pop'), # pop {[reg]*,pc} LE
+    (b'\xe9',4,b'[\x00-\xff][\x80-\xff][\x10-\x1e\x30-\x3e\x50-\x5e\x70-\x7e\x90-\x9e\xb0-\xbe\xd0-\xde\xf0-\xfe]\xe9','ldm') # ldm [reg], {*,pc} LE
+)
+
+jop_armv7 = (
+	(b'\xe1\x2f\xff',4,b'\xe1\x2f\xff[\x10-\x1e]','bx'), # bx reg BE
+    (b'\xe1\x2f\xff',4,b'\xe1\x2f\xff[\x30-\x3e]','blx'), # blx reg BE
+    (b'\xe1\xa0\xf0',4,b'\xe1\xa0\xf0[\x00-\x0f]','mov'), # mov pc, reg BE
+    (b'\xe8\xdb\x80\x01',4,b'\xe8\xdb\x80\x01','ldm'), # ldm sp!, {pc} BE
+    (b'\xff\x2f\xe1',4,b'[\x10-\x1e]\xff\x2f\xe1','bx'), # bx reg LE
+    (b'\xff\x2f\xe1',4,b'[\x30-\x3e]\xff\x2f\xe1','blx'), # blx reg LE
+    (b'\xf0\xa0\xe1',4,b'[\x00-\x0f]\xf0\xa0\xe1','mov'), # mov pc, reg LE
+    (b'\x01\x80\xdb\xe8',4,b'\x01\x80\xdb\xe8','ldm') # ldm sp!, {pc} LE
+)
+
+mnemonics_armv7 = ('bx','blx','mov','pop','ldm')
+
+ctrl_x86 = {
+    "rop":rop_x86,
+    "jop":jop_x86,
+    "cop":cop_x86,
+    "sys":sys_x86,
+    "mnemonics":mnemonics_x86
+}
+
+ctrl_armv7 = {
+    "rop":rop_armv7,
+    "jop":jop_armv7,
+    "cop":(),
+    "sys":(),
+    "mnemonics":mnemonics_armv7
+}
+
+gadgets = {
+    "x86":ctrl_x86,
+    "x86_64":ctrl_x86,
+    "armv7":ctrl_armv7
+}
+
 arm64 = {}
 mips = {}
 
 arch = {
     'x86':i386,
     'x86_64':amd64,
-    'arm32':arm32,
+    'armv7':armv7,
     'arm64':arm64
 }
 
 ubitmode = {
     'x86':UC_MODE_32,
-    'x86_64':UC_MODE_64
+    'x86_64':UC_MODE_64,
+    'armv7':UC_MODE_ARM
 }
 
 uarch = {
     'x86':UC_ARCH_X86,
     'x86_64':UC_ARCH_X86,
     'arm64':UC_ARCH_ARM64,
-    'arm':UC_ARCH_ARM,
-    'mips':UC_ARCH_MIPS,
-    'ppc':UC_ARCH_PPC
+    'armv7':UC_ARCH_ARM,
+    'mips':UC_ARCH_MIPS
 }
 
 capstone_arch = {
     'x86':CS_ARCH_X86,
     'x86_64':CS_ARCH_X86,
-    'arm32':0,
+    'armv7':CS_ARCH_ARM,
     'arm64':0
 }
 
@@ -292,6 +309,8 @@ def bitmode(arch):
         return CS_MODE_64
     elif 'x86' in arch:
         return CS_MODE_32
+    elif 'armv7' in arch:
+        return CS_MODE_ARM
 
 def debug_notify(msg):
     log_info(str(msg),'RopView - Debug')
