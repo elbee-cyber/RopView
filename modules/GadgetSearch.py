@@ -77,7 +77,7 @@ class GadgetSearch:
 
             curr_site = self.__bv.start
 
-            while curr_site != None:
+            while curr_site is not None:
                 # Find potential gadget site
                 curr_site = self.__bv.find_next_data(curr_site,ctrl[0])
                 if curr_site is None:
@@ -91,11 +91,11 @@ class GadgetSearch:
                 if update(curr,full) == False:
                     self.__bv.session_data['RopView']['gadget_disasm'] = {}
                     self.__bv.session_data['RopView']['gadget_asm'] = {}
-                    self.flush()
+                    fflush(self.__bv)
                     return False
 
                 # Confirm the gadget site contains the current control instruction
-                if re.match(ctrl[2],self.__bv.read(curr_site,ctrl[1])) != None:
+                if re.match(ctrl[2],self.__bv.read(curr_site,ctrl[1])) is not None:
                     for i in range(0,self.depth):
                         if not self.__bv.get_segment_at(curr_site).executable:
                             break
@@ -151,7 +151,7 @@ class GadgetSearch:
                 curr_site = save+1
         
         # Save metadata to bv
-        worker_enqueue(self.saveCache)
+        worker_priority_enqueue(self.saveCache)
 
         return True
 
@@ -182,13 +182,3 @@ class GadgetSearch:
             self.__bv.session_data['RopView']['gadget_asm'][addr] = value
             self.__bv.session_data['RopView']['gadget_disasm'][addr] = disasm_cache[addr]
             iteration += 1
-
-    def flush(self, extra=None):
-        self.__bv.session_data['RopView']['cache']['rop_disasm'] = {}
-        self.__bv.session_data['RopView']['cache']['rop_asm'] = {} 
-        self.__bv.session_data['RopView']['cache']['jop_disasm'] = {}
-        self.__bv.session_data['RopView']['cache']['jop_asm'] = {} 
-        self.__bv.session_data['RopView']['cache']['cop_disasm'] = {}
-        self.__bv.session_data['RopView']['cache']['cop_asm'] = {}
-        self.__bv.session_data['RopView']['cache']['sys_disasm'] = {}
-        self.__bv.session_data['RopView']['cache']['sys_asm'] = {}

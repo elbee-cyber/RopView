@@ -105,6 +105,7 @@ class GadgetAnalysis:
 
         # Setup emulator context for analysis
         mu = Uc(uarch[self._arch], ubitmode[self._arch])
+        self.uc = mu
 
         # Configure register context to prestate
         for reg, value in self.prestate.items():
@@ -153,7 +154,7 @@ class GadgetAnalysis:
         mu.hook_del(hi)
 
         # Unmap all unicorn regions
-        self._uc_release(mu)
+        self.uc_release(mu)
 
         # Find and rename cyclic registers
         i = 0
@@ -207,14 +208,14 @@ class GadgetAnalysis:
             mappings.insert(0,-1)
             return GA_ERR_FETCH # Invalid execution at % (No recovery)
         if access == UC_MEM_READ_UNMAPPED:
-            if segment == None:
+            if segment is None:
                 mappings.insert(0,-1)
                 return GA_ERR_READ_UNMAPPED # Attempted to read unmapped memory at % (Speculative) (No recovery)'
             if self.err == GA_ERR_READ_UNRESOLVED:
                 mappings.insert(0,-1)
             return GA_ERR_READ_UNRESOLVED # Attempted to read unmapped memory at % (Realtime resolve)
         if access == UC_MEM_WRITE_UNMAPPED:
-            if segment == None:
+            if segment is None:
                 mappings.insert(0,-1)
                 return GA_ERR_WRITE_UNMAPPED # Attempted to write to unmapped memory (% to %) (Speculative) (No recovery)
             if self.err == GA_ERR_WRITE_UNRESOLVED:
@@ -290,7 +291,7 @@ class GadgetAnalysis:
             # Emulate again (the hook should have populated mappings)
             return self._emulate(mu,mappings)
 
-    def _uc_release(self, uc):
+    def uc_release(self, uc):
         '''
         Unmaps all regions in a unicorn emulation
         :param uc: Unicorn object
@@ -300,7 +301,7 @@ class GadgetAnalysis:
 
     def __hook_intr(self, uc, intro, foobar):
         self.err = GA_ERR_INTR
-        self._uc_release(uc)
+        self.uc_release(uc)
         uc.emu_stop()
 
     def hook_mem_invalid(self, uc, access, address, size, value, mappings):
