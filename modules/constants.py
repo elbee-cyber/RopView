@@ -173,6 +173,18 @@ rop_x86 = (
 	(b'\xc2',3,b'\xc2[\x00-\xff]{2}','ret')							                    # ret n
 )
 
+rop_arm32 = (
+	(b'\xe8',4,b'\xe8[\x10-\x1e\x30-\x3e\x50-\x5e\x70-\x7e\x90-\x9e\xb0-\xbe\xd0-\xde\xf0-\xfe][\x80-\xff][\x00-\xff]','pop'), # pop {[reg]*,pc}
+    (b'\xe9',4,b'\xe9[\x10-\x1e\x30-\x3e\x50-\x5e\x70-\x7e\x90-\x9e\xb0-\xbe\xd0-\xde\xf0-\xfe][\x80-\xff][\x00-\xff]','ldm') # ldm [reg], {*,pc}
+)
+
+jop_arm32 = (
+	(b'\xe1\x2f\xff',4,b'\xe1\x2f\xff[\x10-\x1e]','bx'), # bx reg
+    (b'\xe1\x2f\xff',4,b'\xe1\x2f\xff[\x30-\x3e]','blx'), # blx reg
+    (b'\xe1\xa0\xf0',4,b'\xe1\xa0\xf0[\x00-\x0f]','mov'), # mov pc, reg
+    (b'\xe8\xdb\x80\x01',4,b'\xe8\xdb\x80\x01','ldm') # ldm sp!, {pc}
+)
+
 jop_x86 = (
 	(b'\xff',2,b'\xff[\x20\x21\x22\x23\x26\x27]','jmp'),					            # jmp [reg]
 	#(b'\xf2\xff',3,b'\xf2\xff[\x20\x21\x22\x23\x26\x27]','jmp'),				        # bnd jmp [reg]
@@ -212,7 +224,6 @@ gadgets = {
     "x86_64":ctrl_x86
 }
 
-arm32 = {}
 arm64 = {}
 mips = {}
 
