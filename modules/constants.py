@@ -1,6 +1,7 @@
 from capstone import *
 from unicorn.unicorn_const import *
 from unicorn.x86_const import *
+from unicorn.arm_const import *
 from binaryninja import log_info
 
 # ERR
@@ -50,7 +51,6 @@ i386 = {
     'registers':['ax','bx','cx','dx','ah','al','bh','bl','ch','cl','dh','dl','eax','ebx','ecx','edx','esi','edi','ebp'],
     'sp':['esp'],
     'pc':['eip'],
-    'stack_pivots':['pop esp'],
     'prestateOpts':['eax','ebx','ecx','edx','esi','edi','ebp'],
     'presets':{
         'stack_pivot':'disasm.str.contains("pop esp") or disasm.str.contains("xchg esp, [a-z0-9]{2,3}") or disasm.str.contains("xchg [a-z0-9]{2,3}, esp")',
@@ -91,7 +91,8 @@ i386 = {
         'ebp':[' bp'],
         'esi':[' si'],
         'edi':[' di']
-    }
+    },
+    'alignment':0
 }
 
 amd64 = {
@@ -143,7 +144,8 @@ amd64 = {
         'r13':['r13d','r13w','r13b'],
         'r14':['r14d','r14w','r14b'],
         'r15':['r15d','r15w','r15b']
-    }
+    },
+    'alignment':0
 }
 amd64['uregs'].update(i386['uregs'])
 
@@ -220,7 +222,40 @@ gadgets = {
     "x86_64":ctrl_x86
 }
 
-arm32 = {}
+arm32 = {
+    'bitmode':32,
+    'registers':['r0','r1','r2','r3','r4','r5','r6','r7','r8','r9','r10','r11','r12','lr'],
+    'sp':['sp'],
+    'pc':['pc'],
+    'prestateOpts':['r0','r1','r2','r3','r4','r5','r6','r7','r8','r9','r10','r11','r12','lr'],
+    'presets':{
+        '':'' # TODO
+    },
+    'blacklist':[],
+    'uregs':{
+        'sp':UC_ARM_REG_SP,
+        'r0':UC_ARM_REG_R0,
+        'r1':UC_ARM_REG_R1,
+        'r2':UC_ARM_REG_R2,
+        'r3':UC_ARM_REG_R3,
+        'r4':UC_ARM_REG_R4,
+        'r5':UC_ARM_REG_R5,
+        'r6':UC_ARM_REG_R6,
+        'r7':UC_ARM_REG_R7,
+        'r8':UC_ARM_REG_R8,
+        'r9':UC_ARM_REG_R9,
+        'r10':UC_ARM_REG_R10,
+        'r11':UC_ARM_REG_R11,
+        'r12':UC_ARM_REG_R12,
+        'lr':UC_ARM_REG_LR,
+        'pc':UC_ARM_REG_PC
+        
+    },
+    'upc':UC_ARM_REG_PC,
+    'loweraccess':{},
+    'alignment':4
+}
+
 arm64 = {}
 mips = {}
 
