@@ -26,6 +26,8 @@ class RopView(QScrollArea, View):
 		# Session data
 		binaryView.session_data['RopView'] = {}
 		binaryView.session_data['RopView']['cache'] = {}
+		binaryView.session_data['RopView']['gadget_disasm'] = {}
+		binaryView.session_data['RopView']['gadget_asm'] = {}
 		binaryView.session_data['RopView']['cache']['rop_disasm'] = {}
 		binaryView.session_data['RopView']['cache']['rop_asm'] = {}
 		binaryView.session_data['RopView']['cache']['jop_disasm'] = {}
@@ -34,7 +36,7 @@ class RopView(QScrollArea, View):
 		binaryView.session_data['RopView']['cache']['cop_asm'] = {}
 		binaryView.session_data['RopView']['cache']['sys_disasm'] = {}
 		binaryView.session_data['RopView']['cache']['sys_asm'] = {}
-		binaryView.session_data['RopView']['cache']['depth'] = 10
+		binaryView.session_data['RopView']['depth'] = 10
 		binaryView.session_data['RopView']['cache']['analysis'] = {}
 		binaryView.session_data['RopView']['analysis_enabled'] = True
 		binaryView.session_data['RopView']['search_initialized'] = False
@@ -50,6 +52,12 @@ class RopView(QScrollArea, View):
 		self.ui.gadgetPane.hideColumn(1)
 		self.ui.gadgetPane.resizeColumnToContents(2)
 
+		# Restore saved caches
+		try:
+			run_progress_dialog("Loading from cache",False,self.loadCache)
+		except KeyError:
+			pass
+
 		# Support check
 		if binaryView.arch.name not in arch or arch[binaryView.arch.name] == {}:
 			show_message_box("Unsupported Architecture","{} is not yet supported!".format(binaryView.arch.name))
@@ -60,6 +68,7 @@ class RopView(QScrollArea, View):
 		# Gadget Pane
 		self.renderer = GadgetRender(self.binaryView, self.ui)
 		self.curr_prestate = self.renderer.buildPrestate()
+		self.emu_queue = []
 
 		# Search
 		self.searchfilter = None
@@ -83,6 +92,41 @@ class RopView(QScrollArea, View):
 				break
 			regedit.textChanged.connect(self.updatePrestate)
 			i += 1
+
+	def loadCache(self,update):
+		curr = 0
+		full = 10
+		try:
+			self.binaryView.session_data['RopView']['cache']['rop_disasm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.rop_disasm").items()})
+			curr += 1
+			update(curr,full)
+			self.binaryView.session_data['RopView']['cache']['rop_asm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.rop_asm").items()})
+			curr += 1
+			update(curr,full)
+			self.binaryView.session_data['RopView']['cache']['jop_disasm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.jop_disasm").items()})
+			curr += 1
+			update(curr,full)
+			self.binaryView.session_data['RopView']['cache']['jop_asm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.jop_asm").items()})
+			curr += 1
+			update(curr,full)
+			self.binaryView.session_data['RopView']['cache']['cop_disasm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.cop_disasm").items()})
+			curr += 1
+			update(curr,full)
+			self.binaryView.session_data['RopView']['cache']['cop_asm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.cop_asm").items()})
+			curr += 1
+			update(curr,full)
+			self.binaryView.session_data['RopView']['cache']['sys_disasm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.sys_disasm").items()})
+			curr += 1
+			update(curr,full)
+			self.binaryView.session_data['RopView']['cache']['sys_asm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.sys_asm").items()})
+			curr += 1
+			update(curr,full)
+			self.binaryView.session_data['RopView']['gadget_disasm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.gadget_disasm").items()})
+			curr += 1
+			update(curr,full)
+			self.binaryView.session_data['RopView']['gadget_asm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.gadget_asm").items()})
+		except:
+			return
 
 	def goto_address(self, item, column):
 		'''
@@ -109,13 +153,22 @@ class RopView(QScrollArea, View):
 			self.startAnalysis()
 	
 	def startAnalysis(self):
-		mainthread.execute_on_main_thread(self.gadgetAnalysis)
+		# Prevent overspawn of emulations from scrolling
+		if len(self.emu_queue) > 5:
+			ga = self.emu_queue.pop(0)
+			try:
+				ga.uc_release(ga.uc)
+				ga.uc.emu_stop()
+				del ga
+			except:
+				pass
+		worker_interactive_enqueue(self.gadgetAnalysis)
 
 	def querySetup(self):
-		if len(self.binaryView.session_data['RopView']['gadget_disasm']) > 0 and self.searchfilter == None:
+		if len(self.binaryView.session_data['RopView']['gadget_disasm']) > 0 and self.searchfilter is None:
 			self.searchfilter = SearchFilter(self.binaryView,self.ui,self.renderer)
 			self.ui.semanticBox.setMaximum(len(self.binaryView.session_data['RopView']['gadget_disasm']))
-			self.searchfilter.query()
+			self.searchfilter.spawnQuery()
 		
 	def gadgetAnalysis(self):
 		'''
@@ -139,6 +192,8 @@ class RopView(QScrollArea, View):
 			effects = ga.results
 		else:
 			ga = GadgetAnalysis(self.binaryView, addr, gadget_str)
+			# Add emu to queue
+			self.emu_queue.append(ga)
 			ga.set_prestate(self.curr_prestate)
 			effects = ga.analyze()[0]
 			self.binaryView.session_data['RopView']['cache']['analysis'][addr] = ga.saveState()

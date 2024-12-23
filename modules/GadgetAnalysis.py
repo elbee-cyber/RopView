@@ -95,7 +95,7 @@ class GadgetAnalysis:
         self.inst_cnt = self.gadget_str.count(';')
 
         # Cyclic data copied onto the emu stack based on gadget length
-        self._cyclic_data = self.cyclic(self.inst_cnt*2)
+        self.__cyclic_data = self.cyclic(self.inst_cnt*2)
 
         # Resolved mappings saved here
         self.derefs = []
@@ -105,6 +105,7 @@ class GadgetAnalysis:
 
         # Setup emulator context for analysis
         mu = Uc(uarch[self._arch], ubitmode[self._arch])
+        self.uc = mu
 
         # Configure register context to prestate
         for reg, value in self.prestate.items():
@@ -117,7 +118,7 @@ class GadgetAnalysis:
 
         # stack
         mu.mem_map(0x2000,0x1000)
-        mu.mem_write(0x2100,self._cyclic_data[0])
+        mu.mem_write(0x2100,self.__cyclic_data[0])
         mu.mem_protect(0x2000,0x1000,(UC_PROT_READ+UC_PROT_WRITE))
         mu.reg_write(arch[self._arch]['uregs']['sp'],0x2100)
 
@@ -153,14 +154,14 @@ class GadgetAnalysis:
         mu.hook_del(hi)
 
         # Unmap all unicorn regions
-        self._uc_release(mu)
+        self.uc_release(mu)
 
         # Find and rename cyclic registers
         i = 0
         for state in self.results:
             for key,value in state.items():
-                if value in self._cyclic_data[1]:
-                    self.results[i][key] = 'Full control (stack) (offset {})'.format(str(int(self._cyclic_data[1].index(value)*self.bm)))
+                if value in self.__cyclic_data[1]:
+                    self.results[i][key] = 'Full control (stack) (offset {})'.format(str(int(self.__cyclic_data[1].index(value)*self.bm)))
             i += 1
     
         # Save in cache
@@ -207,14 +208,14 @@ class GadgetAnalysis:
             mappings.insert(0,-1)
             return GA_ERR_FETCH # Invalid execution at % (No recovery)
         if access == UC_MEM_READ_UNMAPPED:
-            if segment == None:
+            if segment is None:
                 mappings.insert(0,-1)
                 return GA_ERR_READ_UNMAPPED # Attempted to read unmapped memory at % (Speculative) (No recovery)'
             if self.err == GA_ERR_READ_UNRESOLVED:
                 mappings.insert(0,-1)
             return GA_ERR_READ_UNRESOLVED # Attempted to read unmapped memory at % (Realtime resolve)
         if access == UC_MEM_WRITE_UNMAPPED:
-            if segment == None:
+            if segment is None:
                 mappings.insert(0,-1)
                 return GA_ERR_WRITE_UNMAPPED # Attempted to write to unmapped memory (% to %) (Speculative) (No recovery)
             if self.err == GA_ERR_WRITE_UNRESOLVED:
@@ -290,7 +291,7 @@ class GadgetAnalysis:
             # Emulate again (the hook should have populated mappings)
             return self._emulate(mu,mappings)
 
-    def _uc_release(self, uc):
+    def uc_release(self, uc):
         '''
         Unmaps all regions in a unicorn emulation
         :param uc: Unicorn object
@@ -300,7 +301,7 @@ class GadgetAnalysis:
 
     def __hook_intr(self, uc, intro, foobar):
         self.err = GA_ERR_INTR
-        self._uc_release(uc)
+        self.uc_release(uc)
         uc.emu_stop()
 
     def hook_mem_invalid(self, uc, access, address, size, value, mappings):
@@ -317,8 +318,8 @@ class GadgetAnalysis:
         mappings.append(address)
 
         # Save last access for viewtype display
-        if address in self._cyclic_data[1]:
-            self.last_access = ['Stack data',self._cyclic_data[1].index(address)*self.bm]
+        if address in self.__cyclic_data[1]:
+            self.last_access = ['Stack data',self.__cyclic_data[1].index(address)*self.bm]
         else:
             self.last_access = [address,value]
 
@@ -426,7 +427,7 @@ class GadgetAnalysis:
         '''
         sp = arch[self._arch]['uregs'][arch[self._arch]['sp'][0]]
         stack_val = mu.reg_read(sp)
-        if stack_val in self._cyclic_data[1]:
+        if stack_val in self.__cyclic_data[1]:
             return True
         self.__last_addr = stack_val
         return False
@@ -450,7 +451,7 @@ class GadgetAnalysis:
         asm = mu.mem_read(address,size)
 
         # Current disasm
-        md = Cs(capstone_arch[self._arch], bitmode(self._arch)[0])
+        md = Cs(capstone_arch[self._arch], bitmode(self._arch))
         for i in md.disasm(asm, 0x1000):
             disasm += i.mnemonic+' '+i.op_str
 

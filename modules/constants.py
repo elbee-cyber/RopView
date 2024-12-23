@@ -1,5 +1,4 @@
 from capstone import *
-from keystone import *
 from unicorn.unicorn_const import *
 from unicorn.x86_const import *
 from binaryninja import log_info
@@ -54,6 +53,11 @@ i386 = {
     'pc':['eip'],
     'stack_pivots':['pop esp'],
     'prestateOpts':['eax','ebx','ecx','edx','esi','edi','ebp'],
+    'presets':{
+        'stack_pivot':'disasm.str.contains("pop esp") or disasm.str.contains("xchg esp, [a-z0-9]{2,3}") or disasm.str.contains("xchg [a-z0-9]{2,3}, esp")',
+        'ppr':'(disasm.str.count("pop")==2 and disasm.str.contains("ret") and inst_cnt==3)',
+        'jmp_reg':'disasm.str.contains("jmp [a-z0-9]{2,3} ;")'
+    },
     'blacklist':['int1', 'int3','int 1','int 3','loop','xmm','zmm','ymm'],
     'uregs':{
         'sp':UC_X86_REG_ESP,
@@ -100,8 +104,12 @@ amd64 = {
     'sp':['rsp','esp'],
     'pc':['rip','eip'],
     'prestateOpts':['rax','rbx','rcx','rdx','rsi','rdi','rbp','r8','r9','r10','r11','r12','r13','r14','r15'],
-    'stack_pivots':['pop rsp','pop esp'],
-    'execve':"(rax==0x3b or rsi==0 or rdx==0 or rdi==0xdeadbeef) or (disasm.str.contains('syscall') and inst_cnt==1) or ((disasm.str.contains('pop rax') or disasm.str.contains('pop rsi') or disasm.str.contains('pop rdx') or disasm.str.contains('pop rdi')) and inst_cnt<4) and disasm.has('ret ; ')",
+    'presets':{
+        'stack_pivot':'disasm.str.contains("pop [re]sp") or disasm.str.contains("xchg [re]sp, [a-z0-9]{2,3}") or disasm.str.contains("xchg [a-z0-9]{2,3}, [re]sp")',
+        'execve':'(disasm.str.contains("syscall") and inst_cnt==1) or rax==0x3b or rdi==0xdeadbeef or rsi==0 or rdx==0',
+        'ppr':'(disasm.str.count("pop")==2 and disasm.str.contains("ret") and inst_cnt==3)',
+        'jmp_reg':'disasm.str.contains("jmp [a-z0-9]{2,3} ;")'
+    },
     'blacklist':['int1','int3','int 1','int 3','loop','ymm','zmm','xmm'],
     'uregs':{
         'sp':UC_X86_REG_RSP,
@@ -236,18 +244,29 @@ capstone_arch = {
     'arm64':0
 }
 
-keystone_arch = {
-    'x86':KS_ARCH_X86,
-    'x86_64':KS_ARCH_X86,
-    'arm32':0,
-    'arm64':0
-}
-
 def bitmode(arch):
     if '64' in arch:
-        return (CS_MODE_64,KS_MODE_64)
+        return CS_MODE_64
     elif 'x86' in arch:
-        return (CS_MODE_32,KS_MODE_32)
+        return CS_MODE_32
 
 def debug_notify(msg):
     log_info(str(msg),'RopView - Debug')
+
+def fflush(bv):
+    bv.session_data['RopView']['cache']['rop_disasm'] = {}
+    bv.session_data['RopView']['cache']['rop_asm'] = {} 
+    bv.session_data['RopView']['cache']['jop_disasm'] = {}
+    bv.session_data['RopView']['cache']['jop_asm'] = {} 
+    bv.session_data['RopView']['cache']['cop_disasm'] = {}
+    bv.session_data['RopView']['cache']['cop_asm'] = {}
+    bv.session_data['RopView']['cache']['sys_disasm'] = {}
+    bv.session_data['RopView']['cache']['sys_asm'] = {}
+    bv.store_metadata("RopView.rop_disasm",bv.session_data['RopView']['cache']['rop_disasm'])
+    bv.store_metadata("RopView.rop_asm",bv.session_data['RopView']['cache']['rop_asm'])
+    bv.store_metadata("RopView.jop_disasm",bv.session_data['RopView']['cache']['jop_disasm'])
+    bv.store_metadata("RopView.jop_asm",bv.session_data['RopView']['cache']['jop_asm'])
+    bv.store_metadata("RopView.cop_disasm",bv.session_data['RopView']['cache']['cop_disasm'])
+    bv.store_metadata("RopView.cop_asm",bv.session_data['RopView']['cache']['cop_asm'])
+    bv.store_metadata("RopView.sys_disasm",bv.session_data['RopView']['cache']['sys_disasm'])
+    bv.store_metadata("RopView.sys_asm",bv.session_data['RopView']['cache']['sys_asm'])

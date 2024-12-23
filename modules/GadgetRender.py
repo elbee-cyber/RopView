@@ -56,7 +56,7 @@ class GadgetRender:
         self.ui.jopOpt.clicked.connect(self.prepareJOP)
         self.ui.sysOpt.clicked.connect(self.preparesys)
         self.ui.dumpOpt.clicked.connect(self.prepareDump)
-        self.ui.clearCacheButton.clicked.connect(self.clearCache)
+        self.ui.clearCacheButton.clicked.connect(self.flush)
         self.ui.reloadButton.clicked.connect(self.gsearch)
         self.ui.exportButton.clicked.connect(self.export_gadgets)
         self.__selectedItem = None
@@ -96,13 +96,13 @@ class GadgetRender:
         if isSelected:
             self.__selected = self.__selected[0].text(1)
         self.clear_gadgets()
-        if pool == None:
+        if pool is None:
             res = self.sort(self.bv.session_data['RopView']['gadget_disasm'].copy()).items()
         else:
             res = self.sort(pool).items()
         self.render_gadgets(res)
         self.bv.session_data['RopView']['analysis_enabled'] = True
-        if self.__selectedItem != None:
+        if self.__selectedItem is not None:
             self.__selectedItem.setSelected(True)
 
     def repool(self,dep,rop,jop,cop,sys):
@@ -342,22 +342,12 @@ class GadgetRender:
         cop = self.gs.cop
         self.repool(dep,rop,jop,cop,sys)
 
-    def __clearCache(self):
-        mainthread.execute_on_main_thread_and_wait(self.clearCache)
-
     def export_gadgets(self):
         self.bv.session_data['RopView']['dataframe'].to_csv(get_save_filename_input("filename:", "csv", "gadgets.csv"), sep='\t\t\t\t')
 
-    def clearCache(self):
-        self.bv.session_data['RopView']['cache']['rop_disasm'] = {}
-        self.bv.session_data['RopView']['cache']['rop_asm'] = {}
-        self.bv.session_data['RopView']['cache']['jop_disasm'] = {}
-        self.bv.session_data['RopView']['cache']['jop_asm'] = {} 
-        self.bv.session_data['RopView']['cache']['cop_disasm'] = {}
-        self.bv.session_data['RopView']['cache']['cop_asm'] = {}
-        self.bv.session_data['RopView']['cache']['sys_disasm'] = {}
-        self.bv.session_data['RopView']['cache']['sys_asm'] = {}
-        show_message_box("Cache cleared","All gadget caches have been flushed")
+    def flush(self):
+        fflush(self.bv)
+        show_message_box("Cache cleared","Gadget caches flushed")
 
     def gsearch(self):
         sys = self.gs.sys

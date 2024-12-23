@@ -9,15 +9,19 @@ class SearchFilter:
     def __init__(self, bv, ui, renderer):
         self.ui = ui
         self.bv = bv
-        self.ui.lineEdit.returnPressed.connect(self.query)
+        self.ui.lineEdit.returnPressed.connect(self.spawnQuery)
         self.renderer = renderer
         self.regs = arch[self.bv.arch.name]['prestateOpts']
         self.buildDataFrame()
-        self.last_semantic = list(self.bv.session_data['RopView']['gadget_asm'].keys())[0]
+
+    def spawnQuery(self):
+        self.setStatus("Processing query...")
+        execute_on_main_thread_and_wait(self.query)
 
     def query(self):
         self.renderer.ui.resultsLabel.setText('')
         query = self.ui.lineEdit.text()
+        gaveAttr = False
 
         # Empited query, return normal
         if query == '':
@@ -28,10 +32,7 @@ class SearchFilter:
         if 'disasm' in query:
             if 'disasm.' in query:
                 query = query.replace('disasm.','disasm.str.')
-
-        # Format semicolons correctly
-        query = query.replace(' ; ',';')
-        query = query.replace(';',' ; ')
+            gaveAttr = True
 
         # Parse bytes option
         if 'bytes' in query:
@@ -39,40 +40,18 @@ class SearchFilter:
                 query = query.replace('bytes.','bytes.str.')
             query = query.replace('0x','')
             query = query.replace('\\x','')
+            gaveAttr = True
 
-        # Custom 
+        # .has() -> .contains() 
         if '.has(' in query:
             query = query.replace('.has(','.contains(')
+            gaveAttr = True
         
         # Parse presets
-        ## ppr
-        if 'ppr' in query:
-            preset = "(disasm.str.count('pop')==2 and disasm.str.contains('ret') and inst_cnt==3)"
-            query = query.replace('ppr',preset)
-
-        ## stack pivot
-        if 'stack_pivot' in query:
-            preset = "("
-            for pivot in arch[self.bv.arch.name]['stack_pivots']:
-                preset += "disasm.str.contains('"+pivot+"') or "
-            preset = preset[:-3]+")"
-            query = query.replace('stack_pivot',preset)
-
-        ## execve
-        if 'execve' in query:
-            try:
-                query = query.replace('execve',arch[self.bv.arch.name]['execve'])
-            except:
-                show_message_box("Preset does not exist","{} preset does not exist for {}".format('execve',self.bv.arch.name))
-
-        # jmp_reg
-        if 'jmp_reg' in query:
-            preset = "("
-            for reg in arch[self.bv.arch.name]['prestateOpts']:
-                preset += "disasm.str.contains('jmp {}') or ".format(reg)
-            preset = preset[:-4]+")"
-            query = preset
-            
+        for preset in arch[self.bv.arch.name]['presets']:
+            if preset in query:
+                query = query.replace(preset,arch[self.bv.arch.name]['presets'][preset])
+                gaveAttr = True
 
         # Space mismatching
         query = query.replace(' =','=')
@@ -89,6 +68,9 @@ class SearchFilter:
         query = query.replace('* ','*')
         query = query.replace('< ','<')
         query = query.replace('> ','>')
+        
+        if len(re.findall("=|-|\+|/|\*|<|>",query)) > 0:
+            gaveAttr = True
 
         # Semantic regs
         semantic = []
@@ -97,7 +79,7 @@ class SearchFilter:
         ## Transformation: ((reg[><=/*+-] or reg==FULL_CONTROL) and not reg==NOT_ANALYZED)
         replacements = []
         for reg in arch[self.bv.arch.name]['prestateOpts']:
-            if re.search(reg+'[\>\<=\-+\/*]',query) != None:
+            if re.search(reg+'[\>\<=\-+\/*]',query) is not None:
                 reg_matches = re.finditer(reg+'[\>\<=\-+\/*]{1,2}',query)
                 for match in reg_matches:
                     extract_reg = re.sub('[\>\<=\-+\/*]{1,2}','',match.group())
@@ -112,13 +94,21 @@ class SearchFilter:
             query = query.replace(replacement[0],replacement[1])
 
         if len(semantic) > 0:
-            self.__semanticQuery = query
             self.__semanticRegs = semantic
             if not run_progress_dialog("Performing semantic search",True,self.semantic):
                 status = "Semantic search on "
                 for reg in semantic:
                     status += reg+", "
                 self.setStatus(status[:-2]+" canceled",True)
+
+        # Default search behaviour
+        if not gaveAttr and len(semantic) == 0:
+            if "\\x" in query or "0x" in query:
+                query = query.replace('0x','')
+                query = query.replace('\\x','')
+                query = "bytes.str.contains('{}')".format(query)
+            else:
+                query = "disasm.str.contains('{}')".format(query)
 
         # Save matching results
         results = self.attemptQuery(query)
@@ -142,7 +132,6 @@ class SearchFilter:
         self.renderer.update_and_sort(pool)
 
     def semantic(self,update):
-        
         allowed_regs = arch[self.bv.arch.name]['prestateOpts']
         prestate = self.renderer.buildPrestate()
         reg_vals = {}
@@ -153,7 +142,6 @@ class SearchFilter:
         for reg in self.__semanticRegs:
             include += "disasm.str.contains('"+reg+"') or "
         search_space = self.attemptQuery(include[:-4])
-        search_space_len = len(search_space)
         random.shuffle(search_space)
 
         # Prevent exhaustion
@@ -216,8 +204,9 @@ class SearchFilter:
         results = []
         try:
             resultsDF = self.full_df.query(query)
-        except:
+        except Exception as e:
             self.setStatus("Invalid query provided, please try again",True)
+            print(e)
             return results
         for index, row in resultsDF.iterrows():
             results.append(row['addr'])
