@@ -149,6 +149,19 @@ class GadgetAnalysis:
         # Emulate and analyze
         self._emulate(mu, mappings)
 
+        # Get the final register context
+        ## Should this only be set to RISC architectures?
+        context = {}
+        for reg in self.registers:
+            context[reg] = mu.reg_read(arch[self._arch]['uregs'][reg])
+        diff = self.reg_diff(context)
+        # Save diffed registers to clobbered
+        for reg in list(diff.keys()):
+            if reg not in self.clobbered:
+                self.clobbered.append(reg)
+        self.results.append(diff)
+        print(self.results)
+
         # Hook del
         mu.hook_del(ch)
         mu.hook_del(hi)

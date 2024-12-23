@@ -197,7 +197,7 @@ class RopView(QScrollArea, View):
 			ga.set_prestate(self.curr_prestate)
 			effects = ga.analyze()[0]
 			self.binaryView.session_data['RopView']['cache']['analysis'][addr] = ga.saveState()
-		#print(effects)
+		print(effects)
 		self.renderAnalysisPane(effects,ga)
 
 	def renderAnalysisPane(self,effects,ga):
