@@ -44,7 +44,6 @@ err_desc = {
 }
 
 i386 = {
-    'ret':[b'\xc3',b'\xc2',b'\xca',b'\xcb'],
     'bitmode':32,
     # Tokens for string parsing
     # List registers by least significant access first
@@ -96,9 +95,6 @@ i386 = {
 }
 
 amd64 = {
-    'ret':[b'\xc3',b'\xc2',b'\xca',b'\xcb'],
-    # jmp rax , jmp rcx , jmp rdx , jmp rbx , jmp rsp , jmp rbp , jmp rsi , jmp rdi , (jmp (r8-r15))
-    'jumps':[b'\xff\xe0',b'\xff\xe1',b'\xff\xe2',b'\xff\xe3',b'\xff\xe4',b'\xff\xe5',b'\xff\xe6',b'\xff\xe7'],
     'bitmode':64,
     'registers':i386['registers']+['rax','rbx','rcx','rdx','rsi','rdi','rbp','r8','r9','r10','r11','r12','r13','r14','r15'],
     'sp':['rsp','esp'],
@@ -224,6 +220,7 @@ gadgets = {
     "x86_64":ctrl_x86
 }
 
+arm32 = {}
 arm64 = {}
 mips = {}
 
