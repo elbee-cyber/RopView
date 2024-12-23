@@ -30,7 +30,7 @@ class GadgetRender:
         Configure default options, initial gadgetsearch, display right registers into prestate options ui.
         '''
         self.bad_bytes = []
-        self.depth = 16
+        self.depth = 6
         self.block = []
         self.address_range = []
         self.inst_cnt = 0

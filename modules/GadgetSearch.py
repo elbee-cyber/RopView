@@ -120,10 +120,11 @@ class GadgetSearch:
                             # Double gadget check
                             occured = 0
                             for mnemonic in gadgets[self.__bv.arch.name]['mnemonics']:
-                                if mnemonic in disasm:
-                                    occured += disasm.count(mnemonic)
-                            if occured > 1:
-                                break
+                                matches = len(re.findall(mnemonic,disasm))
+                                if matches > 0:
+                                    occured += matches
+                                if occured > 1:
+                                    break
                             
                             # Broken gadget check
                             if disasm == '' or disasm == ' ' or ctrl[3] not in disasm.split(';')[-2]:

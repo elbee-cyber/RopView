@@ -158,7 +158,7 @@ armv7 = {
     'presets':{
         '':'' # TODO
     },
-    'blacklist':[],
+    'blacklist':['ldrdeq '],
     'uregs':{
         'sp':UC_ARM_REG_SP,
         'r0':UC_ARM_REG_R0,
@@ -249,7 +249,7 @@ jop_armv7 = (
     (b'\x01\x80\xdb\xe8',4,b'\x01\x80\xdb\xe8','ldm') # ldm sp!, {pc} LE
 )
 
-mnemonics_armv7 = ('bx','blx','mov','pop','ldm')
+mnemonics_armv7 = ('bx [a-z0-9]{2,3}','blx [a-z0-9]{2,3}','ldmda [^}]*, {[^}]*, pc}','pop {[^}]*, pc}')
 
 ctrl_x86 = {
     "rop":rop_x86,

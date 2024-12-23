@@ -36,7 +36,7 @@ class RopView(QScrollArea, View):
 		binaryView.session_data['RopView']['cache']['cop_asm'] = {}
 		binaryView.session_data['RopView']['cache']['sys_disasm'] = {}
 		binaryView.session_data['RopView']['cache']['sys_asm'] = {}
-		binaryView.session_data['RopView']['depth'] = 10
+		binaryView.session_data['RopView']['depth'] = 6
 		binaryView.session_data['RopView']['cache']['analysis'] = {}
 		binaryView.session_data['RopView']['analysis_enabled'] = True
 		binaryView.session_data['RopView']['search_initialized'] = False
@@ -197,6 +197,7 @@ class RopView(QScrollArea, View):
 			ga.set_prestate(self.curr_prestate)
 			effects = ga.analyze()[0]
 			self.binaryView.session_data['RopView']['cache']['analysis'][addr] = ga.saveState()
+		#print(effects)
 		self.renderAnalysisPane(effects,ga)
 
 	def renderAnalysisPane(self,effects,ga):
