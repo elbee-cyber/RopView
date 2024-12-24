@@ -206,7 +206,7 @@ class SearchFilter:
             resultsDF = self.full_df.query(query)
         except Exception as e:
             self.setStatus("Invalid query provided, please try again",True)
-            print(e)
+            debug_notify(str(e))
             return results
         for index, row in resultsDF.iterrows():
             results.append(row['addr'])

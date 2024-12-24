@@ -105,7 +105,10 @@ amd64 = {
         'stack_pivot':'disasm.str.contains("pop [re]sp") or disasm.str.contains("xchg [re]sp, [a-z0-9]{2,3}") or disasm.str.contains("xchg [a-z0-9]{2,3}, [re]sp")',
         'execve':'(disasm.str.contains("syscall") and inst_cnt==1) or rax==0x3b or rdi==0xdeadbeef or rsi==0 or rdx==0',
         'ppr':'(disasm.str.count("pop")==2 and disasm.str.contains("ret") and inst_cnt==3)',
-        'jmp_reg':'disasm.str.contains("jmp [a-z0-9]{2,3} ;")'
+        'jmp_reg':'disasm.str.contains("jmp [a-z0-9]{2,3} ;")',
+        'csu':'disasm.str.contains("pop rbx ; pop rbp ; pop r12 ; pop r13 ; pop r14 ; pop r15")',
+        'srop':'disasm.str.contains("rax==0xf") or disasm.has("syscall")',
+        'sys':'disasm.str.contains("syscall") or disasm.str.contains("int 0x80") or disasm.str.contains("sysenter")'
     },
     'blacklist':['int1','int3','int 1','int 3','loop','ymm','zmm','xmm'],
     'uregs':{
@@ -158,7 +161,7 @@ armv7 = {
     'presets':{
         '':'' # TODO
     },
-    'blacklist':['ldrdeq '],
+    'blacklist':['ldrdeq ','strheq '],
     'uregs':{
         'sp':UC_ARM_REG_SP,
         'r0':UC_ARM_REG_R0,
