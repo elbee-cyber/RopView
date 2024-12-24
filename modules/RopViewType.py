@@ -162,7 +162,8 @@ class RopView(QScrollArea, View):
 				del ga
 			except:
 				pass
-		worker_interactive_enqueue(self.gadgetAnalysis)
+		# To avoid crashes due to scrolling (and huge worker queues)
+		execute_on_main_thread_and_wait(self.gadgetAnalysis)
 
 	def querySetup(self):
 		if len(self.binaryView.session_data['RopView']['gadget_disasm']) > 0 and self.searchfilter is None:
@@ -197,7 +198,6 @@ class RopView(QScrollArea, View):
 			ga.set_prestate(self.curr_prestate)
 			effects = ga.analyze()[0]
 			self.binaryView.session_data['RopView']['cache']['analysis'][addr] = ga.saveState()
-		print(effects)
 		self.renderAnalysisPane(effects,ga)
 
 	def renderAnalysisPane(self,effects,ga):
@@ -214,7 +214,7 @@ class RopView(QScrollArea, View):
 		beforeLabel.setFont(labelFont)
 		detailPane.addItem(beforeLabel)
 
-		if ga.used_regs == {}:
+		if not ga.used_regs:
 			item = QListWidgetItem(detailPane)
 			item.setText("No registers to list (gadget doesn't clobber)")
 			item.setFont(itemFont)
@@ -234,8 +234,8 @@ class RopView(QScrollArea, View):
 		for inst in ga.instructions:
 			space = QListWidgetItem(detailPane)
 			detailPane.addItem(space)
-			if inst == ga.instructions[-1]:
-				break
+			# if inst == ga.instructions[-1]:
+			# 	break
 			if inst[0] == ' ':
 				inst = inst[1:]
 			itemLabel = QListWidgetItem(detailPane)
@@ -255,6 +255,9 @@ class RopView(QScrollArea, View):
 			i += 1
 
 		# End state
+		if len(ga.instructions) == len(effects):
+			space = QListWidgetItem(detailPane)
+			detailPane.addItem(space)
 		afterLabel = QListWidgetItem(detailPane)
 		afterLabel.setText("After analysis:")
 		afterLabel.setFont(labelFont)
@@ -284,7 +287,7 @@ class RopView(QScrollArea, View):
 			detailPane.addItem(itemBody)
 			return
 
-		if ga.end_state == {}:
+		if not ga.end_state:
 			item = QListWidgetItem(detailPane)
 			item.setText("No registers to list (gadget doesn't clobber)")
 			item.setFont(itemFont)

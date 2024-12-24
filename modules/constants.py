@@ -176,7 +176,6 @@ armv7 = {
         'r12':UC_ARM_REG_R12,
         'lr':UC_ARM_REG_LR,
         'pc':UC_ARM_REG_PC
-        
     },
     'upc':UC_ARM_REG_PC,
     'loweraccess':{},

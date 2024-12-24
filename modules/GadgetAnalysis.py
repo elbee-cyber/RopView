@@ -95,7 +95,7 @@ class GadgetAnalysis:
         self.inst_cnt = self.gadget_str.count(';')
 
         # Cyclic data copied onto the emu stack based on gadget length
-        self.__cyclic_data = self.cyclic(self.inst_cnt*2)
+        self.__cyclic_data = self.cyclic(self.inst_cnt*self.gadget_str.count(',')*2)
 
         # Resolved mappings saved here
         self.derefs = []
@@ -140,6 +140,9 @@ class GadgetAnalysis:
         # Holds the last non-corrupted stack pointer value
         self.__last_addr = 0x2100
 
+        # Holds the last pc loc to detect branching
+        self.__last_pc = 0x1000
+
         # Add hook for step analysis
         ch = mu.hook_add(UC_HOOK_CODE, self.analyze_step)
 
@@ -155,12 +158,6 @@ class GadgetAnalysis:
         for reg in self.registers:
             context[reg] = mu.reg_read(arch[self._arch]['uregs'][reg])
         diff = self.reg_diff(context)
-        # Save diffed registers to clobbered
-        for reg in list(diff.keys()):
-            if reg not in self.clobbered:
-                self.clobbered.append(reg)
-        self.results.append(diff)
-        print(self.results)
 
         # Hook del
         mu.hook_del(ch)
@@ -176,7 +173,24 @@ class GadgetAnalysis:
                 if value in self.__cyclic_data[1]:
                     self.results[i][key] = 'Full control (stack) (offset {})'.format(str(int(self.__cyclic_data[1].index(value)*self.bm)))
             i += 1
-    
+        for key,value in diff.items():
+            if value in self.__cyclic_data[1]:
+                diff[key] = 'Full control (stack) (offset {})'.format(str(int(self.__cyclic_data[1].index(value)*self.bm)))
+
+        # Save err_desc as step value for halted instruction
+        if self.err != 0:
+            self.results.append({'Analysis halted':err_desc[self.err]})
+        else:
+            # Save diffed registers to clobbered
+            for reg in list(diff.keys()):
+                if reg not in self.clobbered:
+                    self.clobbered.append(reg)
+            self.results.append(diff)
+        
+        # Build used_regs based off of clobbered registers and their prestate values
+        for reg in self.clobbered:
+            self.used_regs[reg] = self.prestate[reg]
+
         # Save in cache
         if self.gadget_str not in self.emulated:
             self.emulated[self.gadget_str] = self.results.copy()
@@ -184,14 +198,6 @@ class GadgetAnalysis:
         
         # Save fail
         self.saved_fails[self.gadget_str] = self.err
-
-        # Build used_regs based off of clobbered registers and their prestate values
-        for reg in self.clobbered:
-            self.used_regs[reg] = self.prestate[reg]
-
-        # Save err_desc as step value for halted instruction
-        if self.err != 0:
-            self.results.append({'Analysis halted':err_desc[self.err]})
 
         return (self.results, self.err)
 
@@ -489,6 +495,11 @@ class GadgetAnalysis:
             if reg not in self.clobbered:
                 self.clobbered.append(reg)
 
+        # Check if branch occured
+        if abs(address - self.__last_pc) > 16:
+            diff['Control flow changed'] = 'Branch to '+hex(address)
+        self.__last_pc = address
+
         # If last execution cycle an unresolved write/write (recoverable) occured, add the value of the deref to the diff
         if self.err == GA_ERR_WRITE_UNRESOLVED:
             self.err = 0
@@ -501,7 +512,6 @@ class GadgetAnalysis:
             sp = arch[self._arch]['sp'][0]
             diff[sp] = 'Stack pivot (stack)'
             self.clobbered.append(sp)
-        
         # Update diff for current step
         self.results.append(diff)
 
