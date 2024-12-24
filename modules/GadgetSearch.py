@@ -115,7 +115,7 @@ class GadgetSearch:
                                     contains_block = True
                                     break
                             if contains_block:
-                                continue
+                                break
 
                             # Double gadget check
                             occured = 0
@@ -123,8 +123,8 @@ class GadgetSearch:
                                 matches = len(re.findall(mnemonic,disasm))
                                 if matches > 0:
                                     occured += matches
-                                if occured > 1:
-                                    break
+                            if occured > 1:
+                                continue
                             
                             # Broken gadget check
                             if disasm == '' or disasm == ' ' or ctrl[3] not in disasm.split(';')[-2]:
@@ -152,7 +152,7 @@ class GadgetSearch:
                 curr_site = save+arch[self.__bv.arch.name]['alignment']
         
         # Save metadata to bv
-        worker_priority_enqueue(self.saveCache)
+        worker_interactive_enqueue(self.saveCache)
 
         return True
 

@@ -107,8 +107,7 @@ amd64 = {
         'ppr':'(disasm.str.count("pop")==2 and disasm.str.contains("ret") and inst_cnt==3)',
         'jmp_reg':'disasm.str.contains("jmp [a-z0-9]{2,3} ;")',
         'csu':'disasm.str.contains("pop rbx ; pop rbp ; pop r12 ; pop r13 ; pop r14 ; pop r15")',
-        'srop':'disasm.str.contains("rax==0xf") or disasm.has("syscall")',
-        'sys':'disasm.str.contains("syscall") or disasm.str.contains("int 0x80") or disasm.str.contains("sysenter")'
+        'srop':'rax==0xf or (disasm.str.contains("syscall") and inst_cnt==1)'
     },
     'blacklist':['int1','int3','int 1','int 3','loop','ymm','zmm','xmm'],
     'uregs':{
@@ -158,10 +157,8 @@ armv7 = {
     'sp':['sp'],
     'pc':['pc'],
     'prestateOpts':['r0','r1','r2','r3','r4','r5','r6','r7','r8','r9','r10','r11','r12','lr'],
-    'presets':{
-        '':'' # TODO
-    },
-    'blacklist':['ldrdeq ','strheq '],
+    'presets':{},
+    'blacklist':['ldrdeq ','strheq ','strdeq '],
     'uregs':{
         'sp':UC_ARM_REG_SP,
         'r0':UC_ARM_REG_R0,
@@ -226,8 +223,8 @@ jop_x86 = (
 
 sys_x86 = (
 	(b'\xcd\x80',2,b'\xcd\x80','int 0x80'),							                    # int 0x80
-	(b'\x0f\x05',2,b'\x0f\x05','syscall'),							                    # syscall
-	(b'\x0f\x34',2,b'\0x0f\x34','sysenter'),						                    # sysenter
+	(b'\x0f\x05',2,b'\x0f\x05','syscall'),						                    # syscall
+	(b'\x0f\x34',2,b'\x0f\x34','sysenter'),						                    # sysenter
 	(b'\x65\xff\x15\x10\x00\x00\x00',7,b'\x65\xff\x15\x10\x00\x00\x00','call gs:[10]')	# call gs:[10]
 )
 

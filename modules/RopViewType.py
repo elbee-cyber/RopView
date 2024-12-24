@@ -9,7 +9,6 @@ from .GadgetRender import GadgetRender
 from .SearchFilter import SearchFilter
 from binaryninja import *
 from .constants import *
-import copy
 
 class RopView(QScrollArea, View):
 	'''
@@ -36,7 +35,7 @@ class RopView(QScrollArea, View):
 		binaryView.session_data['RopView']['cache']['cop_asm'] = {}
 		binaryView.session_data['RopView']['cache']['sys_disasm'] = {}
 		binaryView.session_data['RopView']['cache']['sys_asm'] = {}
-		binaryView.session_data['RopView']['depth'] = 6
+		binaryView.session_data['RopView']['depth'] = 10
 		binaryView.session_data['RopView']['cache']['analysis'] = {}
 		binaryView.session_data['RopView']['analysis_enabled'] = True
 		binaryView.session_data['RopView']['search_initialized'] = False

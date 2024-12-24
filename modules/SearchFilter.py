@@ -15,7 +15,6 @@ class SearchFilter:
         self.buildDataFrame()
 
     def spawnQuery(self):
-        self.setStatus("Searching...")
         execute_on_main_thread_and_wait(self.query)
 
     def query(self):
