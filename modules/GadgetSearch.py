@@ -67,6 +67,7 @@ class GadgetSearch:
         curr = self.__bv.start
         last_iter = 0
         full = (self.__bv.end-self.__bv.start) * len(self.__control_insn)
+        alignment = arch[self.__bv.arch.name]['alignment']
 
         for ctrl in self.__control_insn:
             # Used for progress iter
@@ -80,7 +81,7 @@ class GadgetSearch:
 
                 if curr_site is None:
                     break
-                else:
+                elif alignment != 1:
                     curr_site -= (arch[self.__bv.arch.name]['alignment']-len(ctrl[0]))
 
                 # Saved to increase after depth search
@@ -93,14 +94,13 @@ class GadgetSearch:
                     self.__bv.session_data['RopView']['gadget_asm'] = {}
                     fflush(self.__bv)
                     return False
-
                 # Confirm the gadget site contains the current control instruction
                 if re.match(ctrl[2],self.__bv.read(curr_site,ctrl[1])) is not None:
                     for i in range(0,self.depth):
                         if not self.__bv.get_segment_at(curr_site).executable:
                             break
                         else:
-                            index = i*arch[self.__bv.arch.name]['alignment']
+                            index = i*alignment
                             curr_site = save-index
                             insn = self.__bv.read(curr_site,index+ctrl[1])
                             disasm = ''
@@ -115,7 +115,7 @@ class GadgetSearch:
                                     contains_block = True
                                     break
                             if contains_block:
-                                break
+                                continue
 
                             # Double gadget check
                             occured = 0

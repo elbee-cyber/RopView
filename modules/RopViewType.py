@@ -38,7 +38,7 @@ class RopView(QScrollArea, View):
 		binaryView.session_data['RopView']['depth'] = 10
 		binaryView.session_data['RopView']['cache']['analysis'] = {}
 		binaryView.session_data['RopView']['analysis_enabled'] = True
-		binaryView.session_data['RopView']['search_initialized'] = False
+		binaryView.session_data['RopView']['cache_coherent'] = True
 
 		# Base UI
 		QScrollArea.__init__(self, parent)

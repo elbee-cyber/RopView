@@ -15,6 +15,9 @@ class SearchFilter:
         self.buildDataFrame()
 
     def spawnQuery(self):
+        if not self.bv.session_data['RopView']['cache_coherent']:
+            self.buildDataFrame()
+            self.bv.session_data['RopView']['cache_coherent'] = True
         execute_on_main_thread_and_wait(self.query)
 
     def query(self):
@@ -116,9 +119,7 @@ class SearchFilter:
             if len(results) == 0:
                 self.setStatus("Semantic search failed",True)
             else:
-                self.setStatus("Semantic search completed")
-        else:
-            self.setStatus("Search completed")
+                self.setStatus("Semantic search completed")            
 
         # Build pool and update rendering
         if len(results) == 0:
@@ -209,6 +210,10 @@ class SearchFilter:
             return results
         for index, row in resultsDF.iterrows():
             results.append(row['addr'])
+        if len(results) == 0:
+            self.setStatus("No results found",True)
+        else:
+            self.setStatus("Search completed")
         return results
 
     def buildDataFrame(self):

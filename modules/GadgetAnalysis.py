@@ -95,7 +95,7 @@ class GadgetAnalysis:
         self.inst_cnt = self.gadget_str.count(';')
 
         # Cyclic data copied onto the emu stack based on gadget length
-        self.__cyclic_data = self.cyclic(self.inst_cnt*self.gadget_str.count(',')*2)
+        self.__cyclic_data = self.cyclic(self.inst_cnt*(self.gadget_str.count(',')+1)*2)
 
         # Resolved mappings saved here
         self.derefs = []
@@ -195,7 +195,7 @@ class GadgetAnalysis:
         if self.gadget_str not in self.emulated:
             self.emulated[self.gadget_str] = self.results.copy()
         self.build_endstate()
-        
+
         # Save fail
         self.saved_fails[self.gadget_str] = self.err
 

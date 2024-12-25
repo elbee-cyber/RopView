@@ -690,7 +690,7 @@ class Ui_Form(object):
         self.depthBox = QSpinBox(self.OptionsView)
         self.depthBox.setObjectName(u"depthBox")
         self.depthBox.setMinimum(1)
-        self.depthBox.setValue(6)
+        self.depthBox.setValue(10)
 
         self.depthOpt.addWidget(self.depthBox)
 

@@ -269,6 +269,8 @@ class GadgetRender:
         jop = self.gs.jop
         cop = self.gs.cop
         sys = self.gs.sys
+        fflush(self.bv)
+        self.bv.session_data['RopView']['cache_coherent'] = False
         self.repool(dep,rop,jop,cop,sys)
 
     def prepareBlock(self):

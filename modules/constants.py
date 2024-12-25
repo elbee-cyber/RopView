@@ -131,7 +131,7 @@ amd64 = {
     },
     'upc':UC_X86_REG_RIP,
     'loweraccess':{
-        'rax':['eax',' ax',' ah',' al'],
+        'rax':['eax','ax','ah','al'],
         'rbx':['ebx',' bx',' bh',' bl'],
         'rcx':['ecx',' cx',' ch',' cl'],
         'rdx':['edx',' dx',' dh',' dl'],
@@ -323,6 +323,7 @@ def fflush(bv):
     bv.session_data['RopView']['cache']['cop_asm'] = {}
     bv.session_data['RopView']['cache']['sys_disasm'] = {}
     bv.session_data['RopView']['cache']['sys_asm'] = {}
+    bv.session_data['RopView']['cache']['analysis'] = {}
     bv.store_metadata("RopView.rop_disasm",bv.session_data['RopView']['cache']['rop_disasm'])
     bv.store_metadata("RopView.rop_asm",bv.session_data['RopView']['cache']['rop_asm'])
     bv.store_metadata("RopView.jop_disasm",bv.session_data['RopView']['cache']['jop_disasm'])
