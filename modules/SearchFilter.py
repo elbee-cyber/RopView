@@ -142,7 +142,8 @@ class SearchFilter:
         for reg in self.__semanticRegs:
             include += "disasm.str.contains('"+reg+"') or "
         search_space = self.attemptQuery(include[:-4])
-        random.shuffle(search_space)
+        # Unshuffled gadgets offer quicker matches by sorting gadgets based on critical regs and pops
+        #random.shuffle(search_space)
 
         # Prevent exhaustion
         limit = int(self.ui.semanticBox.text())
@@ -202,6 +203,7 @@ class SearchFilter:
 
     def attemptQuery(self,query):
         results = []
+        debug_notify(query)
         try:
             resultsDF = self.full_df.query(query)
         except Exception as e:

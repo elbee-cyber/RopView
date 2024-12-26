@@ -310,6 +310,8 @@ class GadgetRender:
         jop = self.gs.jop
         cop = self.gs.cop
         sys = self.gs.sys
+        fflush(self.bv)
+        self.bv.session_data['RopView']['cache_coherent'] = False
         self.repool(dep,rop,jop,cop,sys)
 
     def prepareROP(self):
@@ -345,7 +347,10 @@ class GadgetRender:
         self.repool(dep,rop,jop,cop,sys)
 
     def export_gadgets(self):
-        self.bv.session_data['RopView']['dataframe'].to_csv(get_save_filename_input("filename:", "csv", "gadgets.csv"), sep='\t\t\t\t')
+        if self.bv.session_data['RopView']['dataframe'] is not None:
+            self.bv.session_data['RopView']['dataframe'].to_csv(get_save_filename_input("filename:", "csv", "gadgets.csv"), sep='\t\t\t\t')
+        else:
+            show_message_box("No dataframe","Start a search to create dataframe")
 
     def flush(self):
         fflush(self.bv)

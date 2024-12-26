@@ -84,13 +84,13 @@ i386 = {
     },
     'upc':UC_X86_REG_EIP,
     'loweraccess':{
-        'eax':[' ax',' ah',' al'],
-        'ebx':[' bx',' bh',' bl'],
-        'ecx':[' cx',' ch',' cl'],
-        'edx':[' dx',' dh',' dl'],
-        'ebp':[' bp'],
-        'esi':[' si'],
-        'edi':[' di']
+        'eax':['ax','ah','al'],
+        'ebx':['bx','bh','bl'],
+        'ecx':['cx','ch','cl'],
+        'edx':['dx','dh','dl'],
+        'ebp':['bp'],
+        'esi':['si'],
+        'edi':['di']
     },
     'alignment':1
 }
@@ -132,12 +132,12 @@ amd64 = {
     'upc':UC_X86_REG_RIP,
     'loweraccess':{
         'rax':['eax','ax','ah','al'],
-        'rbx':['ebx',' bx',' bh',' bl'],
-        'rcx':['ecx',' cx',' ch',' cl'],
-        'rdx':['edx',' dx',' dh',' dl'],
-        'rsi':['esi',' si','sil'],
-        'rdi':['edi',' di','dil'],
-        'rbp':['ebp',' bp',' bpl'],
+        'rbx':['ebx','bx','bh','bl'],
+        'rcx':['ecx','cx','ch','cl'],
+        'rdx':['edx','dx','dh','dl'],
+        'rsi':['esi','si','sil'],
+        'rdi':['edi','di','dil'],
+        'rbp':['ebp','bp','bpl'],
         'r8':['r8d','r8w','r8b'],
         'r9':['r9d','r9w','r9b'],
         'r10':['r10d','r10w','r10b'],

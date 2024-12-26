@@ -157,6 +157,7 @@ class GadgetAnalysis:
         context = {}
         for reg in self.registers:
             context[reg] = mu.reg_read(arch[self._arch]['uregs'][reg])
+        
         diff = self.reg_diff(context)
 
         # Hook del
@@ -423,6 +424,8 @@ class GadgetAnalysis:
         '''
         diff = {}
         for reg,val in context.items():
+            if reg not in self.last_state:
+                continue
             if context[reg] != self.last_state[reg]:
                 diff[reg] = context[reg]
         remove = []

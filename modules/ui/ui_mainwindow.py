@@ -757,7 +757,7 @@ class Ui_Form(object):
         self.semanticBox = QSpinBox(self.OptionsView)
         self.semanticBox.setObjectName(u"semanticBox")
         self.semanticBox.setMaximum(2000)
-        self.semanticBox.setValue(1000)
+        self.semanticBox.setValue(500)
 
         self.horizontalLayout_3.addWidget(self.semanticBox)
 
