@@ -2,6 +2,7 @@ from capstone import *
 from unicorn.unicorn_const import *
 from unicorn.x86_const import *
 from unicorn.arm_const import *
+from unicorn.mips_const import *
 from binaryninja import log_info
 
 # ERR
@@ -182,6 +183,53 @@ armv7 = {
     'alignment':4
 }
 
+mips = {
+    'bitmode':32,
+    'registers':['$0','$1','$2','$3','$4','$5','$6','$7','$8','$9','$10','$11','$12','$13','$14','$15','$16','$17','$18','$19','$20','$21','$22','$23','$24','$25','$26','$27','$28','$29','$30','$31'],
+    'sp':['$29'],
+    'pc':['$31'],
+    'prestateOpts':['$0','$1','$2','$3','$4','$5','$6','$7','$8','$9','$10','$11','$12','$13','$14','$15','$16','$17','$18','$19','$20','$21','$22','$23','$24','$25','$26','$27','$28','$30'],
+    'presets':{},
+    'blacklist':['syscall'],
+    'uregs':{
+        '$0':UC_MIPS_REG_0,
+        '$1':UC_MIPS_REG_1,
+        '$2':UC_MIPS_REG_2,
+        '$3':UC_MIPS_REG_3,
+        '$4':UC_MIPS_REG_4,
+        '$5':UC_MIPS_REG_5,
+        '$6':UC_MIPS_REG_6,
+        '$7':UC_MIPS_REG_7,
+        '$8':UC_MIPS_REG_8,
+        '$9':UC_MIPS_REG_9,
+        '$10':UC_MIPS_REG_10,
+        '$11':UC_MIPS_REG_11,
+        '$12':UC_MIPS_REG_12,
+        '$13':UC_MIPS_REG_13,
+        '$14':UC_MIPS_REG_14,
+        '$15':UC_MIPS_REG_15,
+        '$16':UC_MIPS_REG_16,
+        '$17':UC_MIPS_REG_17,
+        '$18':UC_MIPS_REG_18,
+        '$19':UC_MIPS_REG_19,
+        '$20':UC_MIPS_REG_20,
+        '$21':UC_MIPS_REG_21,
+        '$22':UC_MIPS_REG_22,
+        '$23':UC_MIPS_REG_23,
+        '$24':UC_MIPS_REG_24,
+        '$25':UC_MIPS_REG_25,
+        '$26':UC_MIPS_REG_26,
+        '$27':UC_MIPS_REG_27,
+        '$28':UC_MIPS_REG_28,
+        '$29':UC_MIPS_REG_29,
+        '$30':UC_MIPS_REG_30,
+        '$31':UC_MIPS_REG_31
+    },
+    'upc':UC_MIPS_REG_31,
+    'loweraccess':{},
+    'alignment':4
+}
+
 '''
 i386, amd64
 '''
@@ -230,6 +278,9 @@ sys_x86 = (
 
 mnemonics_x86 = ('jmp','call','ret','retf')
 
+'''
+armv7
+'''
 rop_armv7 = (
 	(b'\xe8',4,b'\xe8[\x10-\x1e\x30-\x3e\x50-\x5e\x70-\x7e\x90-\x9e\xb0-\xbe\xd0-\xde\xf0-\xfe][\x80-\xff][\x00-\xff]','pop'), # pop {[reg]*,pc} BE
     (b'\xe9',4,b'\xe9[\x10-\x1e\x30-\x3e\x50-\x5e\x70-\x7e\x90-\x9e\xb0-\xbe\xd0-\xde\xf0-\xfe][\x80-\xff][\x00-\xff]','ldm'), # ldm [reg], {*,pc} BE
@@ -248,7 +299,17 @@ jop_armv7 = (
     (b'\x01\x80\xdb\xe8',4,b'\x01\x80\xdb\xe8','ldm') # ldm sp!, {pc} LE
 )
 
+'''
+mips
+'''
+jop_mips = (
+    (b'\x03\xe0\x00\x08',4,b'\x03\xe0\x00\x08','jr'), # jr ra
+    (b'\x03\x20\x00\x08',4,b'\x03\x20\x00\x08','jr'), # jr t9
+    (b'\x03\x20\xf8\x09',4,b'\x03\x20\xf8\x09','jalr') # jalr t9
+)
+
 mnemonics_armv7 = ('bx [a-z0-9]{2,3}','blx [a-z0-9]{2,3}','ldmda [^}]*, {[^}]*, pc}','pop {[^}]*, pc}')
+mnemonics_mips = ('jr','jalr')
 
 ctrl_x86 = {
     "rop":rop_x86,
@@ -266,14 +327,22 @@ ctrl_armv7 = {
     "mnemonics":mnemonics_armv7
 }
 
+ctrl_mips = {
+    "rop":(),
+    "jop":jop_mips,
+    "cop":(),
+    "sys":(),
+    "mnemonics":mnemonics_mips
+}
+
 gadgets = {
     "x86":ctrl_x86,
     "x86_64":ctrl_x86,
-    "armv7":ctrl_armv7
+    "armv7":ctrl_armv7,
+    "mips":ctrl_mips
 }
 
 arm64 = {}
-mips = {}
 
 arch = {
     'x86':i386,
@@ -285,7 +354,8 @@ arch = {
 ubitmode = {
     'x86':UC_MODE_32,
     'x86_64':UC_MODE_64,
-    'armv7':UC_MODE_ARM
+    'armv7':UC_MODE_ARM,
+    'mips':UC_MODE_MIPS32
 }
 
 uarch = {
@@ -300,7 +370,8 @@ capstone_arch = {
     'x86':CS_ARCH_X86,
     'x86_64':CS_ARCH_X86,
     'armv7':CS_ARCH_ARM,
-    'arm64':0
+    'arm64':0,
+    'mips':CS_ARCH_MIPS
 }
 
 def bitmode(arch):
@@ -310,6 +381,8 @@ def bitmode(arch):
         return CS_MODE_32
     elif 'armv7' in arch:
         return CS_MODE_ARM
+    elif 'mips' in arch:
+        return CS_MODE_MIPS32
 
 def debug_notify(msg):
     log_info(str(msg),'RopView - Debug')
