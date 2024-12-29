@@ -84,6 +84,11 @@ class GadgetSearch:
                 elif alignment != 1:
                     curr_site -= (arch[self.__bv.arch.name]['alignment']-len(ctrl[0]))
 
+                # Alignment==1 if no alignment
+                if curr_site % alignment != 0:
+                    curr_site += arch[self.__bv.arch.name]['alignment']
+                    continue
+
                 # Saved to increase after depth search
                 save = curr_site
 
@@ -97,7 +102,9 @@ class GadgetSearch:
                 # Confirm the gadget site contains the current control instruction
                 if re.match(ctrl[2],self.__bv.read(curr_site,ctrl[1])) is not None:
                     for i in range(0,self.depth):
-                        if not self.__bv.get_segment_at(curr_site).executable:
+                        segment = self.__bv.get_segment_at(curr_site)
+
+                        if segment is None or not segment.executable:
                             break
                         else:
                             index = i*alignment

@@ -82,6 +82,10 @@ class GadgetRender:
                 reg_label.setVisible(False)
                 getattr(self.ui,"regedit_"+str(i)).setVisible(False)
             i += 1
+        
+        # Disable thumb option if not ARM
+        if 'arm' not in self.bv_arch:
+            self.ui.thumbOpt.setVisible(False)
 
     def update_and_sort(self,pool=None):
         '''

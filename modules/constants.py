@@ -2,6 +2,7 @@ from capstone import *
 from unicorn.unicorn_const import *
 from unicorn.x86_const import *
 from unicorn.arm_const import *
+from unicorn.arm64_const import *
 from unicorn.mips_const import *
 from binaryninja import log_info
 
@@ -183,7 +184,7 @@ armv7 = {
     'alignment':4
 }
 
-mips = {
+mipsel32 = {
     'bitmode':32,
     'registers':['$0','$1','$2','$3','$4','$5','$6','$7','$8','$9','$10','$11','$12','$13','$14','$15','$16','$17','$18','$19','$20','$21','$22','$23','$24','$25','$26','$27','$28','$29','$30','$31'],
     'sp':['$29'],
@@ -227,6 +228,84 @@ mips = {
     },
     'upc':UC_MIPS_REG_31,
     'loweraccess':{},
+    'alignment':4
+}
+
+aarch64 = {
+    'bitmode':64,
+    'registers':['x0','x1','x2','x3','x4','x5','x6','x7','x8','x9','x10','x11','x12','x13','x14','x15','x16','x17','x18','x19','x20','x21','x22','x23','x24','x25','x26','x27','x28','x29','x30'],
+    'sp':['x29'],
+    'pc':['x30'],
+    'prestateOpts':['x0','x1','x2','x3','x4','x5','x6','x7','x8','x9','x10','x11','x12','x13','x14','x15','x16','x17','x18','x19','x20','x21','x22','x23','x24','x25','x26','x27','x28'],
+    'presets':{},
+    'blacklist':[],
+    'uregs':{
+        'x0':UC_ARM64_REG_X0,
+        'x1':UC_ARM64_REG_X1,
+        'x2':UC_ARM64_REG_X2,
+        'x3':UC_ARM64_REG_X3,
+        'x4':UC_ARM64_REG_X4,
+        'x5':UC_ARM64_REG_X5,
+        'x6':UC_ARM64_REG_X6,
+        'x7':UC_ARM64_REG_X7,
+        'x8':UC_ARM64_REG_X8,
+        'x9':UC_ARM64_REG_X9,
+        'x10':UC_ARM64_REG_X10,
+        'x11':UC_ARM64_REG_X11,
+        'x12':UC_ARM64_REG_X12,
+        'x13':UC_ARM64_REG_X13,
+        'x14':UC_ARM64_REG_X14,
+        'x15':UC_ARM64_REG_X15,
+        'x16':UC_ARM64_REG_X16,
+        'x17':UC_ARM64_REG_X17,
+        'x18':UC_ARM64_REG_X18,
+        'x19':UC_ARM64_REG_X19,
+        'x20':UC_ARM64_REG_X20,
+        'x21':UC_ARM64_REG_X21,
+        'x22':UC_ARM64_REG_X22,
+        'x23':UC_ARM64_REG_X23,
+        'x24':UC_ARM64_REG_X24,
+        'x25':UC_ARM64_REG_X25,
+        'x26':UC_ARM64_REG_X26,
+        'x27':UC_ARM64_REG_X27,
+        'x28':UC_ARM64_REG_X28,
+        'x29':UC_ARM64_REG_X29,
+        'x30':UC_ARM64_REG_X30
+    },
+    'upc':UC_ARM64_REG_X30,
+    'loweraccess':{
+        'x0':['w0'],
+        'x1':['w1'],
+        'x2':['w2'],
+        'x3':['w3'],
+        'x4':['w4'],
+        'x5':['w5'],
+        'x6':['w6'],
+        'x7':['w7'],
+        'x8':['w8'],
+        'x9':['w9'],
+        'x10':['w10'],
+        'x11':['w11'],
+        'x12':['w12'],
+        'x13':['w13'],
+        'x14':['w14'],
+        'x15':['w15'],
+        'x16':['w16'],
+        'x17':['w17'],
+        'x18':['w18'],
+        'x19':['w19'],
+        'x20':['w20'],
+        'x21':['w21'],
+        'x22':['w22'],
+        'x23':['w23'],
+        'x24':['w24'],
+        'x25':['w25'],
+        'x26':['w26'],
+        'x27':['w27'],
+        'x28':['w28'],
+        'x29':['w29'],
+        'x30':['w30']
+    },
     'alignment':4
 }
 
@@ -282,17 +361,11 @@ mnemonics_x86 = ('jmp','call','ret','retf')
 armv7
 '''
 rop_armv7 = (
-	(b'\xe8',4,b'\xe8[\x10-\x1e\x30-\x3e\x50-\x5e\x70-\x7e\x90-\x9e\xb0-\xbe\xd0-\xde\xf0-\xfe][\x80-\xff][\x00-\xff]','pop'), # pop {[reg]*,pc} BE
-    (b'\xe9',4,b'\xe9[\x10-\x1e\x30-\x3e\x50-\x5e\x70-\x7e\x90-\x9e\xb0-\xbe\xd0-\xde\xf0-\xfe][\x80-\xff][\x00-\xff]','ldm'), # ldm [reg], {*,pc} BE
     (b'\xe8',4,b'[\x00-\xff][\x80-\xff][\x10-\x1e\x30-\x3e\x50-\x5e\x70-\x7e\x90-\x9e\xb0-\xbe\xd0-\xde\xf0-\xfe]\xe8','pop'), # pop {[reg]*,pc} LE
     (b'\xe9',4,b'[\x00-\xff][\x80-\xff][\x10-\x1e\x30-\x3e\x50-\x5e\x70-\x7e\x90-\x9e\xb0-\xbe\xd0-\xde\xf0-\xfe]\xe9','ldm') # ldm [reg], {*,pc} LE
 )
 
 jop_armv7 = (
-	(b'\xe1\x2f\xff',4,b'\xe1\x2f\xff[\x10-\x1e]','bx'), # bx reg BE
-    (b'\xe1\x2f\xff',4,b'\xe1\x2f\xff[\x30-\x3e]','blx'), # blx reg BE
-    (b'\xe1\xa0\xf0',4,b'\xe1\xa0\xf0[\x00-\x0f]','mov'), # mov pc, reg BE
-    (b'\xe8\xdb\x80\x01',4,b'\xe8\xdb\x80\x01','ldm'), # ldm sp!, {pc} BE
     (b'\xff\x2f\xe1',4,b'[\x10-\x1e]\xff\x2f\xe1','bx'), # bx reg LE
     (b'\xff\x2f\xe1',4,b'[\x30-\x3e]\xff\x2f\xe1','blx'), # blx reg LE
     (b'\xf0\xa0\xe1',4,b'[\x00-\x0f]\xf0\xa0\xe1','mov'), # mov pc, reg LE
@@ -300,16 +373,23 @@ jop_armv7 = (
 )
 
 '''
-mips
+aarch64
 '''
-jop_mips = (
+rop_aarch64 = ()
+jop_aarch64 = ()
+
+'''
+mipsel32
+'''
+jop_mipsel32 = (
     (b'\x03\xe0\x00\x08',4,b'\x03\xe0\x00\x08','jr'), # jr ra
     (b'\x03\x20\x00\x08',4,b'\x03\x20\x00\x08','jr'), # jr t9
     (b'\x03\x20\xf8\x09',4,b'\x03\x20\xf8\x09','jalr') # jalr t9
 )
 
 mnemonics_armv7 = ('bx [a-z0-9]{2,3}','blx [a-z0-9]{2,3}','ldmda [^}]*, {[^}]*, pc}','pop {[^}]*, pc}')
-mnemonics_mips = ('jr','jalr')
+mnemonics_mipsel32 = ('jr','jalr')
+mnemonics_aarch64 = ()
 
 ctrl_x86 = {
     "rop":rop_x86,
@@ -327,35 +407,42 @@ ctrl_armv7 = {
     "mnemonics":mnemonics_armv7
 }
 
-ctrl_mips = {
-    "rop":(),
-    "jop":jop_mips,
+ctrl_aarch64 = {
+    "rop":rop_aarch64,
+    "jop":jop_aarch64,
     "cop":(),
     "sys":(),
-    "mnemonics":mnemonics_mips
+    "mnemonics":mnemonics_aarch64
+}
+
+ctrl_mipsel32 = {
+    "rop":(),
+    "jop":jop_mipsel32,
+    "cop":(),
+    "sys":(),
+    "mnemonics":mnemonics_mipsel32
 }
 
 gadgets = {
     "x86":ctrl_x86,
     "x86_64":ctrl_x86,
     "armv7":ctrl_armv7,
-    "mips":ctrl_mips
+    "mipsel32":ctrl_mipsel32
 }
-
-arm64 = {}
 
 arch = {
     'x86':i386,
     'x86_64':amd64,
     'armv7':armv7,
-    'arm64':arm64
+    'aarch64':aarch64
 }
 
 ubitmode = {
     'x86':UC_MODE_32,
     'x86_64':UC_MODE_64,
     'armv7':UC_MODE_ARM,
-    'mips':UC_MODE_MIPS32
+    'mipsel32':UC_MODE_MIPS32,
+    'aarch64':UC_MODE_ARM
 }
 
 uarch = {
@@ -363,29 +450,32 @@ uarch = {
     'x86_64':UC_ARCH_X86,
     'arm64':UC_ARCH_ARM64,
     'armv7':UC_ARCH_ARM,
-    'mips':UC_ARCH_MIPS
+    'mipsel32':UC_ARCH_MIPS,
+    'aarch64':UC_ARCH_ARM64
 }
 
 capstone_arch = {
     'x86':CS_ARCH_X86,
     'x86_64':CS_ARCH_X86,
     'armv7':CS_ARCH_ARM,
-    'arm64':0,
-    'mips':CS_ARCH_MIPS
+    'aarch64':CS_ARCH_ARM64,
+    'mipsel32':CS_ARCH_MIPS
 }
 
 def bitmode(arch):
-    if '64' in arch:
+    if 'x86_64' in arch:
         return CS_MODE_64
     elif 'x86' in arch:
         return CS_MODE_32
     elif 'armv7' in arch:
         return CS_MODE_ARM
-    elif 'mips' in arch:
+    elif 'mipsel32' in arch:
         return CS_MODE_MIPS32
+    elif 'aarch64' in arch:
+        return CS_MODE_ARM
 
 def debug_notify(msg):
-    log_info(str(msg),'RopView - Debug')
+    log_info(str(msg),'RopView.Notify')
 
 def fflush(bv):
     bv.session_data['RopView']['cache']['rop_disasm'] = {}
