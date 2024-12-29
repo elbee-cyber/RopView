@@ -177,6 +177,7 @@ armv7 = {
         'r11':UC_ARM_REG_R11,
         'r12':UC_ARM_REG_R12,
         'lr':UC_ARM_REG_LR,
+        'cpsr':UC_ARM_REG_CPSR,
         'pc':UC_ARM_REG_PC
     },
     'upc':UC_ARM_REG_PC,
@@ -240,6 +241,7 @@ aarch64 = {
     'presets':{},
     'blacklist':[],
     'uregs':{
+        'sp':UC_ARM64_REG_SP,
         'x0':UC_ARM64_REG_X0,
         'x1':UC_ARM64_REG_X1,
         'x2':UC_ARM64_REG_X2,
@@ -270,7 +272,9 @@ aarch64 = {
         'x27':UC_ARM64_REG_X27,
         'x28':UC_ARM64_REG_X28,
         'x29':UC_ARM64_REG_X29,
-        'x30':UC_ARM64_REG_X30
+        'x30':UC_ARM64_REG_X30,
+        'cpsr':UC_ARM64_REG_NZCV,
+        'pc':UC_ARM64_REG_PC
     },
     'upc':UC_ARM64_REG_X30,
     'loweraccess':{
@@ -375,8 +379,18 @@ jop_armv7 = (
 '''
 aarch64
 '''
-rop_aarch64 = ()
-jop_aarch64 = ()
+rop_aarch64 = (
+    (b'\x5f\xd6',4,b'[\x00\x20\x40\x60\x80\xa0\xc0\xe0][\x00-\x02]\x5f\xd6','ret'), # ret reg
+    (b'\x03\x5f\xd6',4,b'[\x00\x20\x40\x60\x80]\x03\x5f\xd6','ret'), # ret reg
+    (b'\xc0\x03\x5f\xd6',4,b'\xc0\x03\x5f\xd6','ret') # ret
+)
+
+jop_aarch64 = (
+    (b'\x1f\xd6',4,b'[\x00\x20\x40\x60\x80\xa0\xc0\xe0][\x00-\x02]\x1f\xd6','br'), # br reg
+    (b'\x03\x1f\xd6',4,b'[\x00\x20\x40\x60\x80]\x03\x1f\xd6','br'), # br reg
+    (b'\x3f\xd6',4,b'[\x00\x20\x40\x60\x80\xa0\xc0\xe0][\x00-\x02]\x3f\xd6','blr'), # blr reg
+    (b'\x03\x3f\xd6',4,b'[\x00\x20\x40\x60\x80]\x03\x3f\xd6','blr') # blr reg
+)
 
 '''
 mipsel32
@@ -389,7 +403,7 @@ jop_mipsel32 = (
 
 mnemonics_armv7 = ('bx [a-z0-9]{2,3}','blx [a-z0-9]{2,3}','ldmda [^}]*, {[^}]*, pc}','pop {[^}]*, pc}')
 mnemonics_mipsel32 = ('jr','jalr')
-mnemonics_aarch64 = ()
+mnemonics_aarch64 = ('ret','br','blr','bl #0x[0-9a-f]*','b #0x[0-9a-f]*')
 
 ctrl_x86 = {
     "rop":rop_x86,
@@ -427,7 +441,9 @@ gadgets = {
     "x86":ctrl_x86,
     "x86_64":ctrl_x86,
     "armv7":ctrl_armv7,
-    "mipsel32":ctrl_mipsel32
+    "mipsel32":ctrl_mipsel32,
+    "aarch64":ctrl_aarch64,
+    "thumb":ctrl_armv7
 }
 
 arch = {
@@ -442,13 +458,13 @@ ubitmode = {
     'x86_64':UC_MODE_64,
     'armv7':UC_MODE_ARM,
     'mipsel32':UC_MODE_MIPS32,
-    'aarch64':UC_MODE_ARM
+    'aarch64':UC_MODE_ARM,
+    'thumb':UC_MODE_THUMB
 }
 
 uarch = {
     'x86':UC_ARCH_X86,
     'x86_64':UC_ARCH_X86,
-    'arm64':UC_ARCH_ARM64,
     'armv7':UC_ARCH_ARM,
     'mipsel32':UC_ARCH_MIPS,
     'aarch64':UC_ARCH_ARM64
@@ -473,6 +489,8 @@ def bitmode(arch):
         return CS_MODE_MIPS32
     elif 'aarch64' in arch:
         return CS_MODE_ARM
+    elif 'thumb' in arch:
+        return CS_MODE_THUMB
 
 def debug_notify(msg):
     log_info(str(msg),'RopView.Notify')

@@ -115,10 +115,8 @@ class Ui_Form(object):
         self.PrestateView = QWidget()
         self.PrestateView.setObjectName(u"PrestateView")
         self.PrestateView.setAutoFillBackground(True)
-        self.verticalLayout_11 = QVBoxLayout(self.PrestateView)
-        self.verticalLayout_11.setObjectName(u"verticalLayout_11")
-        self.verticalLayout_10 = QVBoxLayout()
-        self.verticalLayout_10.setObjectName(u"verticalLayout_10")
+        self.verticalLayout_9 = QVBoxLayout(self.PrestateView)
+        self.verticalLayout_9.setObjectName(u"verticalLayout_9")
         self.prestateLabel = QLabel(self.PrestateView)
         self.prestateLabel.setObjectName(u"prestateLabel")
         font3 = QFont()
@@ -127,7 +125,7 @@ class Ui_Form(object):
         self.prestateLabel.setFont(font3)
         self.prestateLabel.setAlignment(Qt.AlignCenter)
 
-        self.verticalLayout_10.addWidget(self.prestateLabel)
+        self.verticalLayout_9.addWidget(self.prestateLabel)
 
         self.horizontalLayout_6 = QHBoxLayout()
         self.horizontalLayout_6.setObjectName(u"horizontalLayout_6")
@@ -292,33 +290,6 @@ class Ui_Form(object):
 
         self.verticalLayout_2.addLayout(self.regOption_7)
 
-        self.regOption_22 = QHBoxLayout()
-        self.regOption_22.setObjectName(u"regOption_22")
-        self.reglabel_22 = QLabel(self.PrestateView)
-        self.reglabel_22.setObjectName(u"reglabel_22")
-        sizePolicy.setHeightForWidth(self.reglabel_22.sizePolicy().hasHeightForWidth())
-        self.reglabel_22.setSizePolicy(sizePolicy)
-        self.reglabel_22.setFont(font4)
-        self.reglabel_22.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
-
-        self.regOption_22.addWidget(self.reglabel_22)
-
-        self.regedit_22 = QLineEdit(self.PrestateView)
-        self.regedit_22.setObjectName(u"regedit_22")
-        sizePolicy.setHeightForWidth(self.regedit_22.sizePolicy().hasHeightForWidth())
-        self.regedit_22.setSizePolicy(sizePolicy)
-        self.regedit_22.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
-
-        self.regOption_22.addWidget(self.regedit_22)
-
-
-        self.verticalLayout_2.addLayout(self.regOption_22)
-
-
-        self.horizontalLayout_6.addLayout(self.verticalLayout_2)
-
-        self.verticalLayout_3 = QVBoxLayout()
-        self.verticalLayout_3.setObjectName(u"verticalLayout_3")
         self.regOption_8 = QHBoxLayout()
         self.regOption_8.setObjectName(u"regOption_8")
         self.reglabel_8 = QLabel(self.PrestateView)
@@ -339,8 +310,13 @@ class Ui_Form(object):
         self.regOption_8.addWidget(self.regedit_8)
 
 
-        self.verticalLayout_3.addLayout(self.regOption_8)
+        self.verticalLayout_2.addLayout(self.regOption_8)
 
+
+        self.horizontalLayout_6.addLayout(self.verticalLayout_2)
+
+        self.verticalLayout_3 = QVBoxLayout()
+        self.verticalLayout_3.setObjectName(u"verticalLayout_3")
         self.regOption_9 = QHBoxLayout()
         self.regOption_9.setObjectName(u"regOption_9")
         self.reglabel_9 = QLabel(self.PrestateView)
@@ -473,33 +449,6 @@ class Ui_Form(object):
 
         self.verticalLayout_3.addLayout(self.regOption_14)
 
-        self.regOption_23 = QHBoxLayout()
-        self.regOption_23.setObjectName(u"regOption_23")
-        self.reglabel_23 = QLabel(self.PrestateView)
-        self.reglabel_23.setObjectName(u"reglabel_23")
-        sizePolicy.setHeightForWidth(self.reglabel_23.sizePolicy().hasHeightForWidth())
-        self.reglabel_23.setSizePolicy(sizePolicy)
-        self.reglabel_23.setFont(font4)
-        self.reglabel_23.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
-
-        self.regOption_23.addWidget(self.reglabel_23)
-
-        self.regedit_23 = QLineEdit(self.PrestateView)
-        self.regedit_23.setObjectName(u"regedit_23")
-        sizePolicy.setHeightForWidth(self.regedit_23.sizePolicy().hasHeightForWidth())
-        self.regedit_23.setSizePolicy(sizePolicy)
-        self.regedit_23.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
-
-        self.regOption_23.addWidget(self.regedit_23)
-
-
-        self.verticalLayout_3.addLayout(self.regOption_23)
-
-
-        self.horizontalLayout_6.addLayout(self.verticalLayout_3)
-
-        self.verticalLayout_4 = QVBoxLayout()
-        self.verticalLayout_4.setObjectName(u"verticalLayout_4")
         self.regOption_15 = QHBoxLayout()
         self.regOption_15.setObjectName(u"regOption_15")
         self.reglabel_15 = QLabel(self.PrestateView)
@@ -520,7 +469,7 @@ class Ui_Form(object):
         self.regOption_15.addWidget(self.regedit_15)
 
 
-        self.verticalLayout_4.addLayout(self.regOption_15)
+        self.verticalLayout_3.addLayout(self.regOption_15)
 
         self.regOption_16 = QHBoxLayout()
         self.regOption_16.setObjectName(u"regOption_16")
@@ -542,8 +491,13 @@ class Ui_Form(object):
         self.regOption_16.addWidget(self.regedit_16)
 
 
-        self.verticalLayout_4.addLayout(self.regOption_16)
+        self.verticalLayout_3.addLayout(self.regOption_16)
 
+
+        self.horizontalLayout_6.addLayout(self.verticalLayout_3)
+
+        self.verticalLayout_4 = QVBoxLayout()
+        self.verticalLayout_4.setObjectName(u"verticalLayout_4")
         self.regOption_17 = QHBoxLayout()
         self.regOption_17.setObjectName(u"regOption_17")
         self.reglabel_17 = QLabel(self.PrestateView)
@@ -653,6 +607,50 @@ class Ui_Form(object):
 
 
         self.verticalLayout_4.addLayout(self.regOption_21)
+
+        self.regOption_22 = QHBoxLayout()
+        self.regOption_22.setObjectName(u"regOption_22")
+        self.reglabel_22 = QLabel(self.PrestateView)
+        self.reglabel_22.setObjectName(u"reglabel_22")
+        sizePolicy.setHeightForWidth(self.reglabel_22.sizePolicy().hasHeightForWidth())
+        self.reglabel_22.setSizePolicy(sizePolicy)
+        self.reglabel_22.setFont(font4)
+        self.reglabel_22.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
+
+        self.regOption_22.addWidget(self.reglabel_22)
+
+        self.regedit_22 = QLineEdit(self.PrestateView)
+        self.regedit_22.setObjectName(u"regedit_22")
+        sizePolicy.setHeightForWidth(self.regedit_22.sizePolicy().hasHeightForWidth())
+        self.regedit_22.setSizePolicy(sizePolicy)
+        self.regedit_22.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
+
+        self.regOption_22.addWidget(self.regedit_22)
+
+
+        self.verticalLayout_4.addLayout(self.regOption_22)
+
+        self.regOption_23 = QHBoxLayout()
+        self.regOption_23.setObjectName(u"regOption_23")
+        self.reglabel_23 = QLabel(self.PrestateView)
+        self.reglabel_23.setObjectName(u"reglabel_23")
+        sizePolicy.setHeightForWidth(self.reglabel_23.sizePolicy().hasHeightForWidth())
+        self.reglabel_23.setSizePolicy(sizePolicy)
+        self.reglabel_23.setFont(font4)
+        self.reglabel_23.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
+
+        self.regOption_23.addWidget(self.reglabel_23)
+
+        self.regedit_23 = QLineEdit(self.PrestateView)
+        self.regedit_23.setObjectName(u"regedit_23")
+        sizePolicy.setHeightForWidth(self.regedit_23.sizePolicy().hasHeightForWidth())
+        self.regedit_23.setSizePolicy(sizePolicy)
+        self.regedit_23.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
+
+        self.regOption_23.addWidget(self.regedit_23)
+
+
+        self.verticalLayout_4.addLayout(self.regOption_23)
 
         self.regOption_24 = QHBoxLayout()
         self.regOption_24.setObjectName(u"regOption_24")
@@ -861,7 +859,7 @@ class Ui_Form(object):
         self.horizontalLayout_6.addLayout(self.verticalLayout_5)
 
 
-        self.verticalLayout_10.addLayout(self.horizontalLayout_6)
+        self.verticalLayout_9.addLayout(self.horizontalLayout_6)
 
         self.corefileBox = QHBoxLayout()
         self.corefileBox.setObjectName(u"corefileBox")
@@ -879,14 +877,11 @@ class Ui_Form(object):
         self.corefileBox.addItem(self.verticalSpacer_2)
 
 
-        self.verticalLayout_10.addLayout(self.corefileBox)
+        self.verticalLayout_9.addLayout(self.corefileBox)
 
-        self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        self.horizontalSpacer = QSpacerItem(879, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
-        self.verticalLayout_10.addItem(self.horizontalSpacer)
-
-
-        self.verticalLayout_11.addLayout(self.verticalLayout_10)
+        self.verticalLayout_9.addItem(self.horizontalSpacer)
 
         self.tabWidget.addTab(self.PrestateView, "")
         self.PresetView = QWidget()
@@ -1226,8 +1221,6 @@ class Ui_Form(object):
         self.regedit_6.setPlaceholderText(QCoreApplication.translate("Form", u"0x0", None))
         self.reglabel_7.setText(QCoreApplication.translate("Form", u"empty", None))
         self.regedit_7.setPlaceholderText(QCoreApplication.translate("Form", u"0x0", None))
-        self.reglabel_22.setText(QCoreApplication.translate("Form", u"empty", None))
-        self.regedit_22.setPlaceholderText(QCoreApplication.translate("Form", u"0x0", None))
         self.reglabel_8.setText(QCoreApplication.translate("Form", u"empty", None))
         self.regedit_8.setPlaceholderText(QCoreApplication.translate("Form", u"0x0", None))
         self.reglabel_9.setText(QCoreApplication.translate("Form", u"empty", None))
@@ -1242,8 +1235,6 @@ class Ui_Form(object):
         self.regedit_13.setPlaceholderText(QCoreApplication.translate("Form", u"0x0", None))
         self.reglabel_14.setText(QCoreApplication.translate("Form", u"empty", None))
         self.regedit_14.setPlaceholderText(QCoreApplication.translate("Form", u"0x0", None))
-        self.reglabel_23.setText(QCoreApplication.translate("Form", u"empty", None))
-        self.regedit_23.setPlaceholderText(QCoreApplication.translate("Form", u"0x0", None))
         self.reglabel_15.setText(QCoreApplication.translate("Form", u"empty", None))
         self.regedit_15.setPlaceholderText(QCoreApplication.translate("Form", u"0x0", None))
         self.reglabel_16.setText(QCoreApplication.translate("Form", u"empty", None))
@@ -1258,6 +1249,10 @@ class Ui_Form(object):
         self.regedit_20.setPlaceholderText(QCoreApplication.translate("Form", u"0x0", None))
         self.reglabel_21.setText(QCoreApplication.translate("Form", u"empty", None))
         self.regedit_21.setPlaceholderText(QCoreApplication.translate("Form", u"0x0", None))
+        self.reglabel_22.setText(QCoreApplication.translate("Form", u"empty", None))
+        self.regedit_22.setPlaceholderText(QCoreApplication.translate("Form", u"0x0", None))
+        self.reglabel_23.setText(QCoreApplication.translate("Form", u"empty", None))
+        self.regedit_23.setPlaceholderText(QCoreApplication.translate("Form", u"0x0", None))
         self.reglabel_24.setText(QCoreApplication.translate("Form", u"empty", None))
         self.regedit_24.setPlaceholderText(QCoreApplication.translate("Form", u"0x0", None))
         self.reglabel_25.setText(QCoreApplication.translate("Form", u"empty", None))

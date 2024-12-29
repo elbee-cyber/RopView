@@ -117,9 +117,16 @@ class GadgetAnalysis:
         mu.mem_protect(0x1000, 0x1000, (UC_PROT_READ+UC_PROT_EXEC))
 
         # stack
-        mu.mem_map(0x2000,0x1000)
-        mu.mem_write(0x2100,self.__cyclic_data[0])
-        mu.mem_protect(0x2000,0x1000,(UC_PROT_READ+UC_PROT_WRITE))
+        stack_size = 0x1000
+        while True:
+            try:
+                mu.mem_map(0x2000,stack_size)
+                mu.mem_write(0x2100,self.__cyclic_data[0])
+                mu.mem_protect(0x2000,stack_size,(UC_PROT_READ+UC_PROT_WRITE))
+                break
+            except:
+                mu.mem_unmap(0x2000,stack_size)
+                stack_size *= 2
         mu.reg_write(arch[self._arch]['uregs']['sp'],0x2100)
 
         # Used recursively for realtime memory resolving (binary->emulation)
@@ -504,10 +511,10 @@ class GadgetAnalysis:
         self.__last_pc = address
 
         # If last execution cycle an unresolved write/write (recoverable) occured, add the value of the deref to the diff
-        if self.err == GA_ERR_WRITE_UNRESOLVED:
+        if self.err == GA_ERR_WRITE_UNRESOLVED and len(self.derefs) > 0:
             self.err = 0
             diff[hex(self.derefs[-1])] = str(bytes(mu.mem_read(self.derefs[-1],8))) + ' ({})'.format(self.bv.get_sections_at(self.derefs[-1])[0].name)
-        if self.err == GA_ERR_READ_UNRESOLVED:
+        if self.err == GA_ERR_READ_UNRESOLVED and len(self.derefs) > 0:
             self.err = 0
             diff['Reads from '+hex(self.derefs[-1])] = str(bytes(mu.mem_read(self.derefs[-1],8))) + ' ({})'.format(self.bv.get_sections_at(self.derefs[-1])[0].name)
         # If the stack pointer is corrupted, add to diff
