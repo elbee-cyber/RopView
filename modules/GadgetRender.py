@@ -84,7 +84,7 @@ class GadgetRender:
             i += 1
         
         # Disable thumb option if not ARM
-        if 'arm' not in self.bv_arch:
+        if not ('armv7' == self.bv_arch):
             self.ui.thumbOpt.setVisible(False)
 
     def update_and_sort(self,pool=None):

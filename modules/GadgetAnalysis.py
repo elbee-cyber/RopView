@@ -512,11 +512,17 @@ class GadgetAnalysis:
 
         # If last execution cycle an unresolved write/write (recoverable) occured, add the value of the deref to the diff
         if self.err == GA_ERR_WRITE_UNRESOLVED and len(self.derefs) > 0:
-            self.err = 0
-            diff[hex(self.derefs[-1])] = str(bytes(mu.mem_read(self.derefs[-1],8))) + ' ({})'.format(self.bv.get_sections_at(self.derefs[-1])[0].name)
+            try:
+                diff[hex(self.derefs[-1])] = str(bytes(mu.mem_read(self.derefs[-1],8))) + ' ({})'.format(self.bv.get_sections_at(self.derefs[-1])[0].name)
+                self.err = 0
+            except:
+                pass
         if self.err == GA_ERR_READ_UNRESOLVED and len(self.derefs) > 0:
-            self.err = 0
-            diff['Reads from '+hex(self.derefs[-1])] = str(bytes(mu.mem_read(self.derefs[-1],8))) + ' ({})'.format(self.bv.get_sections_at(self.derefs[-1])[0].name)
+            try:
+                diff['Reads from '+hex(self.derefs[-1])] = str(bytes(mu.mem_read(self.derefs[-1],8))) + ' ({})'.format(self.bv.get_sections_at(self.derefs[-1])[0].name)
+                self.err = 0
+            except:
+                pass
         # If the stack pointer is corrupted, add to diff
         if corrupt:
             sp = arch[self._arch]['sp'][0]
