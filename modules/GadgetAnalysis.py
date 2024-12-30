@@ -42,7 +42,14 @@ class GadgetAnalysis:
         self.instructions.pop()
 
         # Architecture, bitmode and corresponding registers
-        self._arch = bv.arch.name
+        try:
+            if self.bv.session_data['RopView']['thumb']:
+                self._arch = 'thumb'
+            else:
+                self._arch = bv.arch.name
+        except:
+            self.bv.session_data['RopView']['thumb'] = False
+
         self.bm = int(arch[self._arch]['bitmode']/8)
         self.registers = arch[self._arch]['registers']
 
@@ -287,6 +294,8 @@ class GadgetAnalysis:
 
         try:
             # Attempt emulation
+            if self._arch == 'thumb':
+                start = start | 1
             mu.emu_start(start,0x1000+len(self._gadget_Raw),count=self.inst_cnt)
             mu.hook_del(h)
             if self.err == GA_ERR_INTR:

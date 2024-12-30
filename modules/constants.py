@@ -375,6 +375,18 @@ jop_armv7 = (
     (b'\xf0\xa0\xe1',4,b'[\x00-\x0f]\xf0\xa0\xe1','mov'), # mov pc, reg LE
     (b'\x01\x80\xdb\xe8',4,b'\x01\x80\xdb\xe8','ldm') # ldm sp!, {pc} LE
 )
+'''
+thumb2
+'''
+rop_thumb = (
+    (b'\xbd',2,b'[\x00-\xff]\xbd','pop'), # pop {regs,pc}
+    (b'\xbd\xe8',4,b'\xbd\xe8[\x80-\xff][\x00-\xff]','pop') # pop.w {regs,pc}
+)
+
+jop_thumb = (
+    (b'\x47',2,b'[\x00-\x7f]\x47','bx'), # bx reg
+    (b'\x47',2,b'[\x80\x88\x90\x98\xa0\xa8\xb0\xb8\xc0\xc8\xd0\xd8\xe0\xe8\xf0\xf8]\x47','blx') # blx reg
+)
 
 '''
 aarch64
@@ -392,6 +404,11 @@ jop_aarch64 = (
     (b'\x03\x3f\xd6',4,b'[\x00\x20\x40\x60\x80]\x03\x3f\xd6','blr') # blr reg
 )
 
+sys_aarch64 = (
+    (b'\x01\x00\x00\xd4',4,b'\x01\x00\x00\xd4','svc'), # svc #0
+    ()
+)
+
 '''
 mipsel32
 '''
@@ -403,7 +420,7 @@ jop_mipsel32 = (
 
 mnemonics_armv7 = ('bx [a-z0-9]{2,3}','blx [a-z0-9]{2,3}','ldmda [^}]*, {[^}]*, pc}','pop {[^}]*, pc}')
 mnemonics_mipsel32 = ('jr','jalr')
-mnemonics_aarch64 = ('ret','br','blr','bl #0x[0-9a-f]*','b #0x[0-9a-f]*')
+mnemonics_aarch64 = ('ret','br','blr','bl #0x[0-9a-f]*','b #0x[0-9a-f]*','svc #0')
 
 ctrl_x86 = {
     "rop":rop_x86,
@@ -425,7 +442,7 @@ ctrl_aarch64 = {
     "rop":rop_aarch64,
     "jop":jop_aarch64,
     "cop":(),
-    "sys":(),
+    "sys":sys_aarch64,
     "mnemonics":mnemonics_aarch64
 }
 
@@ -437,20 +454,29 @@ ctrl_mipsel32 = {
     "mnemonics":mnemonics_mipsel32
 }
 
+ctrl_thumb = {
+    "rop":rop_thumb,
+    "jop":jop_thumb,
+    "cop":(),
+    "sys":(),
+    "mnemonics":mnemonics_armv7
+}
+
 gadgets = {
     "x86":ctrl_x86,
     "x86_64":ctrl_x86,
     "armv7":ctrl_armv7,
     "mipsel32":ctrl_mipsel32,
     "aarch64":ctrl_aarch64,
-    "thumb":ctrl_armv7
+    "thumb":ctrl_thumb
 }
 
 arch = {
     'x86':i386,
     'x86_64':amd64,
     'armv7':armv7,
-    'aarch64':aarch64
+    'aarch64':aarch64,
+    'thumb':armv7
 }
 
 ubitmode = {
@@ -467,7 +493,8 @@ uarch = {
     'x86_64':UC_ARCH_X86,
     'armv7':UC_ARCH_ARM,
     'mipsel32':UC_ARCH_MIPS,
-    'aarch64':UC_ARCH_ARM64
+    'aarch64':UC_ARCH_ARM64,
+    'thumb':UC_ARCH_ARM
 }
 
 capstone_arch = {
@@ -475,7 +502,8 @@ capstone_arch = {
     'x86_64':CS_ARCH_X86,
     'armv7':CS_ARCH_ARM,
     'aarch64':CS_ARCH_ARM64,
-    'mipsel32':CS_ARCH_MIPS
+    'mipsel32':CS_ARCH_MIPS,
+    'thumb':CS_ARCH_ARM
 }
 
 def bitmode(arch):

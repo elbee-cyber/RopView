@@ -56,6 +56,7 @@ class GadgetRender:
         self.ui.jopOpt.clicked.connect(self.prepareJOP)
         self.ui.sysOpt.clicked.connect(self.preparesys)
         self.ui.dumpOpt.clicked.connect(self.prepareDump)
+        self.ui.thumbOpt.clicked.connect(self.prepareThumb)
         self.ui.clearCacheButton.clicked.connect(self.flush)
         self.ui.reloadButton.clicked.connect(self.gsearch)
         self.ui.exportButton.clicked.connect(self.export_gadgets)
@@ -109,8 +110,8 @@ class GadgetRender:
         if self.__selectedItem is not None:
             self.__selectedItem.setSelected(True)
 
-    def repool(self,dep,rop,jop,cop,sys):
-        self.gs = GadgetSearch(self.bv,depth=dep,rop=rop,jop=jop,cop=cop,sys=sys)
+    def repool(self,dep,rop,jop,cop,sys,thumb=False):
+        self.gs = GadgetSearch(self.bv,depth=dep,rop=rop,jop=jop,cop=cop,sys=sys,thumb=thumb)
         if self.bv.session_data['RopView']['loading_canceled']:
             self.search_canceled()
         else:
@@ -273,9 +274,10 @@ class GadgetRender:
         jop = self.gs.jop
         cop = self.gs.cop
         sys = self.gs.sys
+        thumb = self.ui.thumbOpt.isChecked()
         fflush(self.bv)
         self.bv.session_data['RopView']['cache_coherent'] = False
-        self.repool(dep,rop,jop,cop,sys)
+        self.repool(dep,rop,jop,cop,sys,thumb=thumb)
 
     def prepareBlock(self):
         '''
@@ -314,9 +316,10 @@ class GadgetRender:
         jop = self.gs.jop
         cop = self.gs.cop
         sys = self.gs.sys
+        thumb = self.ui.thumbOpt.isChecked()
         fflush(self.bv)
         self.bv.session_data['RopView']['cache_coherent'] = False
-        self.repool(dep,rop,jop,cop,sys)
+        self.repool(dep,rop,jop,cop,sys,thumb=thumb)
 
     def prepareROP(self):
         rop = self.ui.ropOpt.isChecked()
@@ -324,7 +327,8 @@ class GadgetRender:
         jop = self.gs.jop
         cop = self.gs.cop
         sys = self.gs.sys
-        self.repool(dep,rop,jop,cop,sys)
+        thumb = self.ui.thumbOpt.isChecked()
+        self.repool(dep,rop,jop,cop,sys,thumb=thumb)
 
     def prepareCOP(self):
         cop = self.ui.copOpt.isChecked()
@@ -332,7 +336,8 @@ class GadgetRender:
         rop = self.gs.rop
         jop = self.gs.jop
         sys = self.gs.sys
-        self.repool(dep,rop,jop,cop,sys)
+        thumb = self.ui.thumbOpt.isChecked()
+        self.repool(dep,rop,jop,cop,sys,thumb=thumb)
 
     def prepareJOP(self):
         jop = self.ui.jopOpt.isChecked()
@@ -340,7 +345,22 @@ class GadgetRender:
         rop = self.gs.rop
         cop = self.gs.cop
         sys = self.gs.sys
-        self.repool(dep,rop,jop,cop,sys)
+        thumb = self.ui.thumbOpt.isChecked()
+        self.repool(dep,rop,jop,cop,sys,thumb=thumb)
+
+    def prepareThumb(self):
+        rop = self.gs.rop
+        jop = self.gs.jop
+        cop = self.gs.cop
+        dep = self.gs.depth
+        sys = self.gs.sys
+        thumb = self.ui.thumbOpt.isChecked()
+        fflush(self.bv)
+        self.bv.session_data['RopView']['gadget_disasm'] = {}
+        self.bv.session_data['RopView']['gadget_asm'] = {}
+        self.bv.session_data['RopView']['cache_coherent'] = False
+        self.bv.session_data['RopView']['thumb'] = thumb
+        self.repool(dep,rop,jop,cop,sys,thumb=thumb)
 
     def preparesys(self):
         sys = self.ui.sysOpt.isChecked()
@@ -348,7 +368,8 @@ class GadgetRender:
         rop = self.gs.rop
         jop = self.gs.jop
         cop = self.gs.cop
-        self.repool(dep,rop,jop,cop,sys)
+        thumb = self.ui.thumbOpt.isChecked()
+        self.repool(dep,rop,jop,cop,sys,thumb=thumb)
 
     def export_gadgets(self):
         if self.bv.session_data['RopView']['dataframe'] is not None:
@@ -366,7 +387,8 @@ class GadgetRender:
         rop = self.gs.rop
         jop = self.gs.jop
         cop = self.gs.cop
-        self.repool(dep,rop,jop,cop,sys)
+        thumb = self.ui.thumbOpt.isChecked()
+        self.repool(dep,rop,jop,cop,sys,thumb=thumb)
         
 
     def prepareDump(self):
