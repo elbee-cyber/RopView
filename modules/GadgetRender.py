@@ -34,9 +34,6 @@ class GadgetRender:
         self.block = []
         self.address_range = []
         self.inst_cnt = 0
-        self.rop = True
-        self.jop = True
-        self.cop = True
         self.multi_branch = False
         self.duplicates = False
         self.dump = False
@@ -45,6 +42,14 @@ class GadgetRender:
         self.bv_arch = bv.arch.name
         self.__selected = None
 
+        options = {
+            'rop': True,
+            'jop': False,
+            'cop': False,
+            'sys': True
+        }
+
+        self.ui.thumbOpt.setVisible(False)
         self.ui.badBytesEdit.textChanged.connect(self.prepareBadBytes)
         self.ui.depthBox.textChanged.connect(self.prepareDepth)
         self.ui.blockEdit.textChanged.connect(self.prepareBlock)
@@ -61,12 +66,6 @@ class GadgetRender:
         self.ui.reloadButton.clicked.connect(self.gsearch)
         self.ui.exportButton.clicked.connect(self.export_gadgets)
         self.__selectedItem = None
-
-        self.gs = GadgetSearch(bv)
-        if self.bv.session_data['RopView']['loading_canceled']:
-            self.search_canceled()
-        else:
-            self.update_and_sort()
 
         # Load the correct register names into the analysis prestate UI (Options tab)
         reg_label = getattr(self.ui,"reglabel",-1)
@@ -85,8 +84,21 @@ class GadgetRender:
             i += 1
         
         # Disable thumb option if not ARM
-        if not ('armv7' == self.bv_arch):
-            self.ui.thumbOpt.setVisible(False)
+        if 'armv7' == self.bv_arch:
+            self.ui.thumbOpt.setVisible(True)
+
+        # mips is jop only
+        if 'mips' in self.bv_arch:
+            self.ui.jopOpt.setChecked(True)
+            options['jop'] = True
+
+        # remove empty gadget classes
+        for pool in gadgets[self.bv_arch]:
+            if not gadgets[self.bv_arch][pool]:
+                getattr(self.ui,pool+"Opt").setVisible(False)
+                options[pool] = False
+
+        self.repool(self.depth,options['rop'],options['jop'],options['cop'],options['sys'])
 
     def update_and_sort(self,pool=None):
         '''

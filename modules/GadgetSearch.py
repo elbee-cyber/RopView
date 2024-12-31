@@ -77,7 +77,6 @@ class GadgetSearch:
             alignment = arch[self.arch]['alignment']
 
         for ctrl in self.__control_insn:
-
             # Exists incase a group is len==1
             if ctrl == ():
                 continue
@@ -88,7 +87,6 @@ class GadgetSearch:
             curr_site = self.__bv.start
 
             while curr_site is not None:
-    
                 # Find potential gadget site
                 curr_site = self.__bv.find_next_data(curr_site,ctrl[0])
 
@@ -124,7 +122,13 @@ class GadgetSearch:
                         else:
                             index = i*alignment
                             curr_site = save-index
-                            insn = self.__bv.read(curr_site,index+ctrl[1])
+                            insn_size = index+ctrl[1]
+
+                            # Handle delay slots
+                            if 'mips' in self.arch:
+                                insn_size += 4
+
+                            insn = self.__bv.read(curr_site,insn_size)
                             disasm = ''
                             for val in md.disasm(insn,0x1000):
                                 disasm += val.mnemonic + ' ' + val.op_str + ' ; '
@@ -147,9 +151,16 @@ class GadgetSearch:
                                     occured += matches
                             if occured > 1:
                                 continue
-
+                            
                             # Broken gadget check
-                            if disasm == '' or disasm == ' ' or ctrl[3] not in disasm.split(';')[-2]:
+                            if not disasm == '' and not disasm == ' ':
+                                if 'mips' in self.arch:
+                                    broken = ctrl[3] not in disasm.split(';')[-3]
+                                else:
+                                    broken = ctrl[3] not in disasm.split(';')[-2]
+                                if broken:
+                                    continue
+                            else:
                                 continue
 
                             # Cache (cache should contain ALL gadget sites) (ive heard .update(tuple) is faster than .update(dict))

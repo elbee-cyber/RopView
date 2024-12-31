@@ -81,6 +81,7 @@ class SearchFilter:
         ## Transformation: ((reg[><=/*+-] or reg==FULL_CONTROL) and not reg==NOT_ANALYZED)
         replacements = []
         for reg in arch[self.bv.arch.name]['prestateOpts']:
+            reg = reg.replace('$','')
             if re.search(reg+'[\>\<=\-+\/*]',query) is not None:
                 reg_matches = re.finditer(reg+'[\>\<=\-+\/*]{1,2}',query)
                 for match in reg_matches:
@@ -191,7 +192,7 @@ class SearchFilter:
             for reg,val in reg_vals.items():
                 if reg not in self.full_df.columns:
                     continue
-                if reg not in allowed_regs:
+                if (reg not in allowed_regs) and ('$'+reg not in allowed_regs):
                     continue
                 if self.full_df.loc[self.full_df['addr'] == addr, reg].iloc[0] != REG_NOT_ANALYZED:
                     continue
@@ -203,6 +204,7 @@ class SearchFilter:
 
     def attemptQuery(self,query):
         results = []
+        query = query.replace('$','')
         debug_notify(query)
         try:
             resultsDF = self.full_df.query(query)
@@ -237,7 +239,7 @@ class SearchFilter:
         self.bv.session_data['RopView']['dataframe'] = self.full_df
         # Add reg columns
         for reg in self.regs:
-            self.full_df[reg]=REG_NOT_ANALYZED
+            self.full_df[reg.replace('$','')]=REG_NOT_ANALYZED
 
     def setStatus(self,text,error=False):
         self.renderer.ui.resultsLabel.setText(text)

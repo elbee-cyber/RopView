@@ -185,53 +185,6 @@ armv7 = {
     'alignment':4
 }
 
-mipsel32 = {
-    'bitmode':32,
-    'registers':['$0','$1','$2','$3','$4','$5','$6','$7','$8','$9','$10','$11','$12','$13','$14','$15','$16','$17','$18','$19','$20','$21','$22','$23','$24','$25','$26','$27','$28','$29','$30','$31'],
-    'sp':['$29'],
-    'pc':['$31'],
-    'prestateOpts':['$0','$1','$2','$3','$4','$5','$6','$7','$8','$9','$10','$11','$12','$13','$14','$15','$16','$17','$18','$19','$20','$21','$22','$23','$24','$25','$26','$27','$28','$30'],
-    'presets':{},
-    'blacklist':['syscall'],
-    'uregs':{
-        '$0':UC_MIPS_REG_0,
-        '$1':UC_MIPS_REG_1,
-        '$2':UC_MIPS_REG_2,
-        '$3':UC_MIPS_REG_3,
-        '$4':UC_MIPS_REG_4,
-        '$5':UC_MIPS_REG_5,
-        '$6':UC_MIPS_REG_6,
-        '$7':UC_MIPS_REG_7,
-        '$8':UC_MIPS_REG_8,
-        '$9':UC_MIPS_REG_9,
-        '$10':UC_MIPS_REG_10,
-        '$11':UC_MIPS_REG_11,
-        '$12':UC_MIPS_REG_12,
-        '$13':UC_MIPS_REG_13,
-        '$14':UC_MIPS_REG_14,
-        '$15':UC_MIPS_REG_15,
-        '$16':UC_MIPS_REG_16,
-        '$17':UC_MIPS_REG_17,
-        '$18':UC_MIPS_REG_18,
-        '$19':UC_MIPS_REG_19,
-        '$20':UC_MIPS_REG_20,
-        '$21':UC_MIPS_REG_21,
-        '$22':UC_MIPS_REG_22,
-        '$23':UC_MIPS_REG_23,
-        '$24':UC_MIPS_REG_24,
-        '$25':UC_MIPS_REG_25,
-        '$26':UC_MIPS_REG_26,
-        '$27':UC_MIPS_REG_27,
-        '$28':UC_MIPS_REG_28,
-        '$29':UC_MIPS_REG_29,
-        '$30':UC_MIPS_REG_30,
-        '$31':UC_MIPS_REG_31
-    },
-    'upc':UC_MIPS_REG_31,
-    'loweraccess':{},
-    'alignment':4
-}
-
 aarch64 = {
     'bitmode':64,
     'registers':['x0','x1','x2','x3','x4','x5','x6','x7','x8','x9','x10','x11','x12','x13','x14','x15','x16','x17','x18','x19','x20','x21','x22','x23','x24','x25','x26','x27','x28','x29','x30'],
@@ -310,6 +263,58 @@ aarch64 = {
         'x29':['w29'],
         'x30':['w30']
     },
+    'alignment':4
+}
+
+mipsel32 = {
+    'bitmode':32,
+    'registers':['$v0','$v1','$a0','$a1','$a2','$a3','$t0','$t1','$t2','$t3','$t4','$t5','$t6','$t7','$t8','$t9','$s0','$s1','$s2','$s3','$s4','$s5','$s6','$s7','$gp','$fp'],
+    'sp':['$sp'],
+    'pc':['$pc'],
+    'prestateOpts':['$v0','$v1','$a0','$a1','$a2','$a3','$t0','$t1','$t2','$t3','$t4','$t5','$t6','$t7','$t8','$t9','$s0','$s1','$s2','$s3','$s4','$s5','$s6','$s7','$gp','$fp'],
+    'presets':{
+        # From ROPgadget https://github.com/JonathanSalwan/ROPgadget/blob/90d9ff7223bdc8064b437045dec1dbd270043698/ropgadget/core.py#L126
+        'stackfinder':'disasm.str.contains("addiu .*, \$sp")',
+        'system':'disasm.str.contains("addiu \$a0, \$sp")',
+        'tails':'disasm.str.contains("lw \$t[0-9], 0x[0-9a-z]{0,4}\(\$s[0-9]") or disasm.str.contains("move \$t9, \$(s|a|v)")',
+        'lia0':'disasm.str.contains("li \$a0")',
+        'registers':'disasm.str.contains("lw \$ra, 0x[0-9a-z]{0,4}\(\$sp")',
+        'sleep_a0':'$a0 > 0 and $a0 < 600'
+    },
+    'blacklist':[],
+    'uregs':{
+        'sp':UC_MIPS_REG_SP,
+        '$sp':UC_MIPS_REG_SP,
+        '$v0':UC_MIPS_REG_V0,
+        '$v1':UC_MIPS_REG_V1,
+        '$a0':UC_MIPS_REG_A0,
+        '$a1':UC_MIPS_REG_A1,
+        '$a2':UC_MIPS_REG_A2,
+        '$a3':UC_MIPS_REG_A3,
+        '$t0':UC_MIPS_REG_T0,
+        '$t1':UC_MIPS_REG_T1,
+        '$t2':UC_MIPS_REG_T2,
+        '$t3':UC_MIPS_REG_T3,
+        '$t4':UC_MIPS_REG_T4,
+        '$t5':UC_MIPS_REG_T5,
+        '$t6':UC_MIPS_REG_T6,
+        '$t7':UC_MIPS_REG_T7,
+        '$t8':UC_MIPS_REG_T8,
+        '$t9':UC_MIPS_REG_T9,
+        '$s0':UC_MIPS_REG_S0,
+        '$s1':UC_MIPS_REG_S1,
+        '$s2':UC_MIPS_REG_S2,
+        '$s3':UC_MIPS_REG_S3,
+        '$s4':UC_MIPS_REG_S4,
+        '$s5':UC_MIPS_REG_S5,
+        '$s6':UC_MIPS_REG_S6,
+        '$s7':UC_MIPS_REG_S7,
+        '$gp':UC_MIPS_REG_GP,
+        '$fp':UC_MIPS_REG_FP,
+        '$pc':UC_MIPS_REG_PC
+    },
+    'upc':UC_MIPS_REG_PC,
+    'loweraccess':{},
     'alignment':4
 }
 
@@ -413,9 +418,9 @@ sys_aarch64 = (
 mipsel32
 '''
 jop_mipsel32 = (
-    (b'\x03\xe0\x00\x08',4,b'\x03\xe0\x00\x08','jr'), # jr ra
-    (b'\x03\x20\x00\x08',4,b'\x03\x20\x00\x08','jr'), # jr t9
-    (b'\x03\x20\xf8\x09',4,b'\x03\x20\xf8\x09','jalr') # jalr t9
+    (b'\x09\xf8\x20\x03',4,b'\x09\xf8\x20\x03','jalr'), # jalr t9
+    (b'\x08\x00\x20\x03',4,b'\x08\x00\x20\x03','jr'), # jr t9
+    (b'\x08\x00\xe0\x03',4,b'\x08\x00\xe0\x03','jr') # jr ra
 )
 
 mnemonics_armv7 = ('bx [a-z0-9]{2,3}','blx [a-z0-9]{2,3}','ldmda [^}]*, {[^}]*, pc}','pop {[^}]*, pc}')
@@ -476,14 +481,15 @@ arch = {
     'x86_64':amd64,
     'armv7':armv7,
     'aarch64':aarch64,
-    'thumb':armv7
+    'thumb':armv7,
+    'mipsel32':mipsel32
 }
 
 ubitmode = {
     'x86':UC_MODE_32,
     'x86_64':UC_MODE_64,
     'armv7':UC_MODE_ARM,
-    'mipsel32':UC_MODE_MIPS32,
+    'mipsel32':UC_MODE_MIPS32 + UC_MODE_LITTLE_ENDIAN,
     'aarch64':UC_MODE_ARM,
     'thumb':UC_MODE_THUMB
 }
@@ -514,7 +520,7 @@ def bitmode(arch):
     elif 'armv7' in arch:
         return CS_MODE_ARM
     elif 'mipsel32' in arch:
-        return CS_MODE_MIPS32
+        return CS_MODE_MIPS32 + CS_MODE_LITTLE_ENDIAN
     elif 'aarch64' in arch:
         return CS_MODE_ARM
     elif 'thumb' in arch:

@@ -429,7 +429,10 @@ class GadgetAnalysis:
         '''
         for state in self.results:
             for reg in list(state.keys()):
-                self.end_state[reg] = state[reg]
+                if '$' in reg:
+                    self.end_state[reg.replace('$','')] = state[reg]
+                else:
+                    self.end_state[reg] = state[reg]
         self.saved_end_states[self.gadget_str] = self.end_state.copy()
     
     def reg_diff(self,context):
