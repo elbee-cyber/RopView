@@ -94,7 +94,8 @@ i386 = {
         'esi':['si'],
         'edi':['di']
     },
-    'alignment':1
+    'alignment':1,
+    'delay_slot':False
 }
 
 amd64 = {
@@ -149,7 +150,8 @@ amd64 = {
         'r14':['r14d','r14w','r14b'],
         'r15':['r15d','r15w','r15b']
     },
-    'alignment':1
+    'alignment':1,
+    'delay_slot':False
 }
 amd64['uregs'].update(i386['uregs'])
 
@@ -182,7 +184,8 @@ armv7 = {
     },
     'upc':UC_ARM_REG_PC,
     'loweraccess':{},
-    'alignment':4
+    'alignment':4,
+    'delay_slot':False
 }
 
 aarch64 = {
@@ -263,7 +266,8 @@ aarch64 = {
         'x29':['w29'],
         'x30':['w30']
     },
-    'alignment':4
+    'alignment':4,
+    'delay_slot':False
 }
 
 # https://stackoverflow.com/questions/21512801/mips32-and-mips64-instructions
@@ -275,12 +279,12 @@ mipsel32 = {
     'prestateOpts':['$v0','$v1','$a0','$a1','$a2','$a3','$t0','$t1','$t2','$t3','$t4','$t5','$t6','$t7','$t8','$t9','$s0','$s1','$s2','$s3','$s4','$s5','$s6','$s7','$gp','$fp'],
     'presets':{
         # From ROPgadget https://github.com/JonathanSalwan/ROPgadget/blob/90d9ff7223bdc8064b437045dec1dbd270043698/ropgadget/core.py#L126
-        'stackfinder':'disasm.str.contains("addiu .*, \$sp")',
-        'system':'disasm.str.contains("addiu \$a0, \$sp")',
+        'stackfinder':'disasm.str.contains("addiu [^;]*, \$sp")',
+        'system':'disasm.str.contains("addiu \$a0, \$sp") or $a0==0xdeadbeef',
         'tails':'disasm.str.contains("lw \$t[0-9], 0x[0-9a-z]{0,4}\(\$s[0-9]") or disasm.str.contains("move \$t9, \$(s|a|v)")',
         'lia0':'disasm.str.contains("li \$a0")',
         'registers':'disasm.str.contains("lw \$ra, 0x[0-9a-z]{0,4}\(\$sp")',
-        'flush':'$a0 > 0 and $a0 < 600'
+        'sleep':'$a0 > 0 and $a0 < 600'
     },
     'blacklist':[],
     'uregs':{
@@ -316,7 +320,8 @@ mipsel32 = {
     },
     'upc':UC_MIPS_REG_PC,
     'loweraccess':{},
-    'alignment':4
+    'alignment':4,
+    'delay_slot':True
 }
 
 '''
@@ -364,8 +369,6 @@ sys_x86 = (
 	(b'\x0f\x34',2,b'\x0f\x34','sysenter'),						                    # sysenter
 	(b'\x65\xff\x15\x10\x00\x00\x00',7,b'\x65\xff\x15\x10\x00\x00\x00','call gs:[10]')	# call gs:[10]
 )
-
-mnemonics_x86 = ('jmp','call','ret','retf')
 
 '''
 armv7
@@ -424,9 +427,20 @@ jop_mipsel32 = (
     (b'\x08\x00\xe0\x03',4,b'\x08\x00\xe0\x03','jr') # jr ra
 )
 
+'''
+mips32
+'''
+jop_mips32 = (
+    (b'\x03\x20\xf8\x09',4,b'\x03\x20\xf8\x09','jalr'), # jalr t9
+    (b'\x03\x20\x00\x08',4,b'\x03\x20\x00\x08','jr'), # jr t9
+    (b'\x03\xe0\x00\x08',4,b'\x03\xe0\x00\x08','jr') # jr ra
+)
+
 mnemonics_armv7 = ('bx [a-z0-9]{2,3}','blx [a-z0-9]{2,3}','ldmda [^}]*, {[^}]*, pc}','pop {[^}]*, pc}')
-mnemonics_mipsel32 = ('jr','jalr')
+mnemonics_mips = ('jr','jalr')
 mnemonics_aarch64 = ('ret','br','blr','bl #0x[0-9a-f]*','b #0x[0-9a-f]*','svc #0')
+mnemonics_x86 = ('jmp','call','ret','retf')
+
 
 ctrl_x86 = {
     "rop":rop_x86,
@@ -457,7 +471,15 @@ ctrl_mipsel32 = {
     "jop":jop_mipsel32,
     "cop":(),
     "sys":(),
-    "mnemonics":mnemonics_mipsel32
+    "mnemonics":mnemonics_mips
+}
+
+ctrl_mips32 = {
+    "rop":(),
+    "jop":jop_mips32,
+    "cop":(),
+    "sys":(),
+    "mnemonics":mnemonics_mips
 }
 
 ctrl_thumb = {
@@ -474,7 +496,8 @@ gadgets = {
     "armv7":ctrl_armv7,
     "mipsel32":ctrl_mipsel32,
     "aarch64":ctrl_aarch64,
-    "thumb":ctrl_thumb
+    "thumb":ctrl_thumb,
+    "mips32":ctrl_mips32
 }
 
 arch = {
@@ -483,7 +506,8 @@ arch = {
     'armv7':armv7,
     'aarch64':aarch64,
     'thumb':armv7,
-    'mipsel32':mipsel32
+    'mipsel32':mipsel32,
+    'mips32':mipsel32
 }
 
 ubitmode = {
@@ -492,7 +516,8 @@ ubitmode = {
     'armv7':UC_MODE_ARM,
     'mipsel32':UC_MODE_MIPS32 + UC_MODE_LITTLE_ENDIAN,
     'aarch64':UC_MODE_ARM,
-    'thumb':UC_MODE_THUMB
+    'thumb':UC_MODE_THUMB,
+    'mips32':UC_MODE_MIPS32 + UC_MODE_BIG_ENDIAN
 }
 
 uarch = {
@@ -501,7 +526,8 @@ uarch = {
     'armv7':UC_ARCH_ARM,
     'mipsel32':UC_ARCH_MIPS,
     'aarch64':UC_ARCH_ARM64,
-    'thumb':UC_ARCH_ARM
+    'thumb':UC_ARCH_ARM,
+    'mips32':UC_ARCH_MIPS
 }
 
 capstone_arch = {
@@ -510,7 +536,8 @@ capstone_arch = {
     'armv7':CS_ARCH_ARM,
     'aarch64':CS_ARCH_ARM64,
     'mipsel32':CS_ARCH_MIPS,
-    'thumb':CS_ARCH_ARM
+    'thumb':CS_ARCH_ARM,
+    'mips32':CS_ARCH_MIPS
 }
 
 def bitmode(arch):
@@ -526,6 +553,8 @@ def bitmode(arch):
         return CS_MODE_ARM
     elif 'thumb' in arch:
         return CS_MODE_THUMB
+    elif 'mips32' in arch:
+        return CS_MODE_MIPS32 + CS_MODE_BIG_ENDIAN
 
 def debug_notify(msg):
     log_info(str(msg),'RopView.Notify')

@@ -67,6 +67,8 @@ class GadgetSearch:
         # Capstone instance used for disassembly
         md = Cs(capstone_arch[self.arch], bitmode(self.arch))
 
+        ds = arch[self.arch]['delay_slot']
+
         # update
         curr = self.__bv.start
         last_iter = 0
@@ -125,7 +127,7 @@ class GadgetSearch:
                             insn_size = index+ctrl[1]
 
                             # Handle delay slots
-                            if 'mips' in self.arch:
+                            if ds:
                                 insn_size += 4
 
                             insn = self.__bv.read(curr_site,insn_size)
@@ -155,7 +157,7 @@ class GadgetSearch:
                             # Broken gadget check
                             if not disasm == '' and not disasm == ' ':
                                 tokened = disasm.split(';')
-                                if 'mips' in self.arch:
+                                if ds:
                                     # tokened[-1] is empty, tokened [-2] is delay slot, tokened[-3] is ctrl
                                     if len(tokened) < 3:
                                         continue

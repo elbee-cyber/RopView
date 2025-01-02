@@ -204,7 +204,8 @@ class SearchFilter:
 
     def attemptQuery(self,query):
         results = []
-        query = query.replace('$','')
+        # Remove unescaped $ chars
+        query = re.sub(r'[^\\]\$|^\$','',query)
         debug_notify(query)
         try:
             resultsDF = self.full_df.query(query)
