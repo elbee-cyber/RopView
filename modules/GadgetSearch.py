@@ -154,10 +154,14 @@ class GadgetSearch:
                             
                             # Broken gadget check
                             if not disasm == '' and not disasm == ' ':
+                                tokened = disasm.split(';')
                                 if 'mips' in self.arch:
-                                    broken = ctrl[3] not in disasm.split(';')[-3]
+                                    # tokened[-1] is empty, tokened [-2] is delay slot, tokened[-3] is ctrl
+                                    if len(tokened) < 3:
+                                        continue
+                                    broken = ctrl[3] not in tokened[-3]
                                 else:
-                                    broken = ctrl[3] not in disasm.split(';')[-2]
+                                    broken = ctrl[3] not in tokened[-2]
                                 if broken:
                                     continue
                             else:

@@ -266,6 +266,7 @@ aarch64 = {
     'alignment':4
 }
 
+# https://stackoverflow.com/questions/21512801/mips32-and-mips64-instructions
 mipsel32 = {
     'bitmode':32,
     'registers':['$v0','$v1','$a0','$a1','$a2','$a3','$t0','$t1','$t2','$t3','$t4','$t5','$t6','$t7','$t8','$t9','$s0','$s1','$s2','$s3','$s4','$s5','$s6','$s7','$gp','$fp'],
@@ -279,7 +280,7 @@ mipsel32 = {
         'tails':'disasm.str.contains("lw \$t[0-9], 0x[0-9a-z]{0,4}\(\$s[0-9]") or disasm.str.contains("move \$t9, \$(s|a|v)")',
         'lia0':'disasm.str.contains("li \$a0")',
         'registers':'disasm.str.contains("lw \$ra, 0x[0-9a-z]{0,4}\(\$sp")',
-        'sleep_a0':'$a0 > 0 and $a0 < 600'
+        'flush':'$a0 > 0 and $a0 < 600'
     },
     'blacklist':[],
     'uregs':{
