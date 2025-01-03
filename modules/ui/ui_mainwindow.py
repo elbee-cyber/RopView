@@ -1003,6 +1003,7 @@ class Ui_Form(object):
         self.badBytesEdit = QLineEdit(self.OptionsView)
         self.badBytesEdit.setObjectName(u"badBytesEdit")
         self.badBytesEdit.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
+        self.badBytesEdit.setClearButtonEnabled(False)
 
         self.badbytesOpt_2.addWidget(self.badBytesEdit)
 
@@ -1083,6 +1084,7 @@ class Ui_Form(object):
 
         self.depthBox = QSpinBox(self.OptionsView)
         self.depthBox.setObjectName(u"depthBox")
+        self.depthBox.setKeyboardTracking(True)
         self.depthBox.setMinimum(1)
         self.depthBox.setValue(10)
 

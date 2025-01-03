@@ -3,7 +3,7 @@ from PySide6.QtWidgets import QTreeWidgetItem, QTreeWidgetItemIterator
 from .GadgetSearch import GadgetSearch
 from .constants import *
 from binaryninja import show_message_box, run_progress_dialog, get_save_filename_input
-from PySide6.QtCore import QCoreApplication
+from PySide6.QtCore import QTimer
 from .SearchFilter import SearchFilter
 
 class GadgetRender:
@@ -49,11 +49,26 @@ class GadgetRender:
             'sys': True
         }
 
+        self.debounce_bb = QTimer()
+        self.debounce_bb.setInterval(2000)
+        self.debounce_bb.setSingleShot(True)
+        self.debounce_bb.timeout.connect(self.prepareBadBytes)
+
+        self.debounce_addr = QTimer()
+        self.debounce_addr.setInterval(2000)
+        self.debounce_addr.setSingleShot(True)
+        self.debounce_addr.timeout.connect(self.prepareRange)
+
+        self.debounce_block = QTimer()
+        self.debounce_block.setInterval(2000)
+        self.debounce_block.setSingleShot(True)
+        self.debounce_block.timeout.connect(self.prepareBlock)
+
         self.ui.thumbOpt.setVisible(False)
-        self.ui.badBytesEdit.textChanged.connect(self.prepareBadBytes)
+        self.ui.badBytesEdit.textChanged.connect(self.debounce_bb.start)
         self.ui.depthBox.textChanged.connect(self.prepareDepth)
-        self.ui.blockEdit.textChanged.connect(self.prepareBlock)
-        self.ui.rangeEdit.textChanged.connect(self.prepareRange)
+        self.ui.blockEdit.textChanged.connect(self.debounce_block.start)
+        self.ui.rangeEdit.textChanged.connect(self.debounce_addr.start)
         self.ui.instCntSpinbox.textChanged.connect(self.prepareInstCnt)
         self.ui.allOpt.clicked.connect(self.prepareRepeat)
         self.ui.ropOpt.clicked.connect(self.prepareROP)
@@ -315,11 +330,9 @@ class GadgetRender:
         self.update_and_sort()
 
     def prepareInstCnt(self):
-        self.inst_cnt = 0
-        cnt = int(self.ui.instCntSpinbox.text())
-        if cnt != 0:
-            self.inst_cnt = cnt
-        self.update_and_sort()
+        self.inst_cnt = int(self.ui.instCntSpinbox.text())
+        if self.inst_cnt != 0:
+            self.update_and_sort()
 
     def prepareRepeat(self):
         self.duplicates = self.ui.allOpt.isChecked()
