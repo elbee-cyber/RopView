@@ -4,7 +4,7 @@ from .GadgetSearch import GadgetSearch
 from .constants import *
 from binaryninja import show_message_box, run_progress_dialog, get_save_filename_input
 from PySide6.QtCore import QTimer
-from .SearchFilter import SearchFilter
+import re
 
 class GadgetRender:
     '''
@@ -41,6 +41,7 @@ class GadgetRender:
         self.bv = bv
         self.bv_arch = bv.arch.name
         self.__selected = None
+        self.currentlyUnique = False
 
         options = {
             'rop': True,
@@ -64,12 +65,22 @@ class GadgetRender:
         self.debounce_block.setSingleShot(True)
         self.debounce_block.timeout.connect(self.prepareBlock)
 
+        self.debounce_instCnt = QTimer()
+        self.debounce_instCnt.setInterval(2000)
+        self.debounce_instCnt.setSingleShot(True)
+        self.debounce_instCnt.timeout.connect(self.prepareInstCnt)
+
+        self.debounce_depth = QTimer()
+        self.debounce_depth.setInterval(2000)
+        self.debounce_depth.setSingleShot(True)
+        self.debounce_depth.timeout.connect(self.prepareDepth)
+
         self.ui.thumbOpt.setVisible(False)
         self.ui.badBytesEdit.textChanged.connect(self.debounce_bb.start)
-        self.ui.depthBox.textChanged.connect(self.prepareDepth)
+        self.ui.depthBox.textChanged.connect(self.debounce_depth.start)
         self.ui.blockEdit.textChanged.connect(self.debounce_block.start)
         self.ui.rangeEdit.textChanged.connect(self.debounce_addr.start)
-        self.ui.instCntSpinbox.textChanged.connect(self.prepareInstCnt)
+        self.ui.instCntSpinbox.textChanged.connect(self.debounce_instCnt.start)
         self.ui.allOpt.clicked.connect(self.prepareRepeat)
         self.ui.ropOpt.clicked.connect(self.prepareROP)
         self.ui.copOpt.clicked.connect(self.prepareCOP)
@@ -119,8 +130,6 @@ class GadgetRender:
         '''
         Clears gadget search pane (ui)
         Re renders gadget search pane (ui)
-
-        Dont use recursion
         '''
         self.bv.session_data['RopView']['analysis_enabled'] = False
         self.__selected = self.ui.gadgetPane.selectedItems()
@@ -129,8 +138,14 @@ class GadgetRender:
             self.__selected = self.__selected[0].text(1)
         self.clear_gadgets()
         if pool is None:
-            res = self.sort(self.bv.session_data['RopView']['gadget_disasm'].copy()).items()
+            # Investigate here if options/semantic bugs
+            if len(self.ui.lineEdit.text()) > 0 and len(self.__allpool) > 0:
+                self.currentlyUnique = False
+                res = self.sort(self.__allpool).items()
+            else:
+                res = self.sort(self.bv.session_data['RopView']['gadget_disasm'].copy()).items()
         else:
+            self.currentlyUnique = False
             res = self.sort(pool).items()
         self.render_gadgets(res)
         self.bv.session_data['RopView']['analysis_enabled'] = True
@@ -139,6 +154,8 @@ class GadgetRender:
 
     def repool(self,dep,rop,jop,cop,sys,thumb=False):
         self.gs = GadgetSearch(self.bv,depth=dep,rop=rop,jop=jop,cop=cop,sys=sys,thumb=thumb)
+        self.currentlyUnique = False
+        self.__allpool = self.bv.session_data['RopView']['gadget_disasm'].copy()
         if self.bv.session_data['RopView']['loading_canceled']:
             self.search_canceled()
         else:
@@ -196,51 +213,56 @@ class GadgetRender:
                 continue
             used.append(val)
 
-    def sort(self, pool):
+    def sort(self,pool):
         '''
         Sorting logic according to options done here. Some options will require a new gadget search be done in (update gs)
         before actual sorting can take place (ei depth)
         '''
+        self.__allpool = pool
+
         # Duplicates
+        if len(self.ui.lineEdit.text()) > 0:
+            self.currentlyUnique = False
         if not self.duplicates:
-            self.__allpool = pool
-            run_progress_dialog("Removing duplicates",False,self.remove_dups)
-            pool = self.__allpool
+            if not self.currentlyUnique:
+                run_progress_dialog("Removing duplicates",False,self.remove_dups)
+                pool = self.__allpool
+                self.currentlyUnique = True
+        else:
+            self.currentlyUnique = False
+
+        pool = self.__allpool
+        temp = pool.copy()
 
         # Bad bytes sort
         if self.bad_bytes != []:
             for b in self.bad_bytes:
                 for addr in list(pool.keys()):
                     if b in hex(addr):
-                        pool.pop(addr)
+                        if addr in pool:
+                            pool.pop(addr)
 
         # Hard pnemonic block sort
         if self.block != []:
-            try:
-                for insn in self.block:
-                    for key,val in pool.items():
-                        if insn in val:
+            for insn in self.block:
+                for key,val in temp.items():
+                    if insn in val:
+                        if key in pool:
                             pool.pop(key)
-            except RuntimeError:
-                pool = self.sort(pool)
 
         # Address range sort
         if self.address_range != []:
-            try:
-                for a in list(pool.keys()):
-                    if not (a > self.address_range[0] and a < self.address_range[1]):
+            for a in list(pool.keys()):
+                if not (a > self.address_range[0] and a < self.address_range[1]):
+                    if a in pool:
                         pool.pop(a)
-            except RuntimeError:
-                pool = self.sort(pool)
 
         # Inst cnt
         if self.inst_cnt != 0:
-            try:
-                for key, val in pool.items():
-                    if len(val.split(';'))-1 > self.inst_cnt:
+            for key, val in temp.items():
+                if len(val.split(';'))-1 > self.inst_cnt:
+                    if key in pool:
                         pool.pop(key)
-            except RuntimeError:
-                pool = self.sort(pool)
 
         return pool
 
@@ -321,13 +343,15 @@ class GadgetRender:
 
     def prepareRange(self):
         self.address_range = []
-        addr = self.ui.rangeEdit.text().split('-')
-        try:
-            self.address_range.append(int(addr[0],16))
-            self.address_range.append(int(addr[1],16))
-        except:
-            pass
-        self.update_and_sort()
+        if re.match('0x[0-9a-f]*-0x[0-9a-f]*',self.ui.rangeEdit.text()) is not None:
+            addr = self.ui.rangeEdit.text().split('-')
+            try:
+                self.address_range.append(int(addr[0],16))
+                self.address_range.append(int(addr[1],16))
+            except:
+                self.address_range = []
+                return
+            self.update_and_sort()
 
     def prepareInstCnt(self):
         self.inst_cnt = int(self.ui.instCntSpinbox.text())
@@ -398,9 +422,12 @@ class GadgetRender:
 
     def export_gadgets(self):
         if self.bv.session_data['RopView']['dataframe'] is not None:
-            self.bv.session_data['RopView']['dataframe'].to_csv(get_save_filename_input("filename:", "csv", "gadgets.csv"), sep='\t\t\t\t')
+            df = self.bv.session_data['RopView']['dataframe'].copy()
+            df.replace(REG_CONTROLLED,'Controlled',inplace=True)
+            df.replace(REG_NOT_ANALYZED,'Unanalyzed',inplace=True)
+            df.to_csv(get_save_filename_input("filename:", "csv", "gadgets.csv"), sep='\t')
         else:
-            show_message_box("No dataframe","Start a search to create dataframe")
+            show_message_box("Dataframe uninitialized","Start a search to create dataframe")
 
     def flush(self):
         fflush(self.bv)
