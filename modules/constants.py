@@ -284,7 +284,7 @@ mipsel32 = {
         'tails':'disasm.str.contains("lw \$t[0-9], 0x[0-9a-z]{0,4}\(\$s[0-9]") or disasm.str.contains("move \$t9, \$(s|a|v)")',
         'lia0':'disasm.str.contains("li \$a0")',
         'registers':'disasm.str.contains("lw \$ra, 0x[0-9a-z]{0,4}\(\$sp")',
-        'sleep':'$a0 > 0 and $a0 < 600'
+        'sleep_a0':'$a0 > 0 and $a0 < 600'
     },
     'blacklist':[],
     'uregs':{

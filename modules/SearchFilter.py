@@ -50,9 +50,9 @@ class SearchFilter:
             gaveAttr = True
         
         # Parse presets
-        for preset in arch[self.bv.arch.name]['presets']:
+        for preset, value in self.bv.session_data['RopView']['presets'].items():
             if preset in query:
-                query = query.replace(preset,arch[self.bv.arch.name]['presets'][preset])
+                query = query.replace(preset,value)
                 gaveAttr = True
 
         # Space mismatching

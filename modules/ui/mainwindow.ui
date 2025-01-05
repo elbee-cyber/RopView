@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>918</width>
-    <height>410</height>
+    <height>512</height>
    </rect>
   </property>
   <property name="focusPolicy">
@@ -1715,8 +1715,8 @@
              <property name="orientation">
               <enum>Qt::Vertical</enum>
              </property>
-             <widget class="QListView" name="keyView"/>
-             <widget class="QListView" name="defView"/>
+             <widget class="QListWidget" name="keyView"/>
+             <widget class="QListWidget" name="defView"/>
             </widget>
            </item>
           </layout>

@@ -17,16 +17,16 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QHBoxLayout,
     QHeaderView, QLabel, QLayout, QLineEdit,
-    QListView, QListWidget, QListWidgetItem, QPushButton,
-    QSizePolicy, QSpacerItem, QSpinBox, QSplitter,
-    QTabWidget, QTextEdit, QTreeWidget, QTreeWidgetItem,
-    QVBoxLayout, QWidget)
+    QListWidget, QListWidgetItem, QPushButton, QSizePolicy,
+    QSpacerItem, QSpinBox, QSplitter, QTabWidget,
+    QTextEdit, QTreeWidget, QTreeWidgetItem, QVBoxLayout,
+    QWidget)
 
 class Ui_Form(object):
     def setupUi(self, Form):
         if not Form.objectName():
             Form.setObjectName(u"Form")
-        Form.resize(918, 410)
+        Form.resize(918, 512)
         Form.setFocusPolicy(Qt.NoFocus)
         self.verticalLayout_6 = QVBoxLayout(Form)
         self.verticalLayout_6.setObjectName(u"verticalLayout_6")
@@ -955,10 +955,10 @@ class Ui_Form(object):
         self.splitter_2 = QSplitter(self.layoutWidget1)
         self.splitter_2.setObjectName(u"splitter_2")
         self.splitter_2.setOrientation(Qt.Vertical)
-        self.keyView = QListView(self.splitter_2)
+        self.keyView = QListWidget(self.splitter_2)
         self.keyView.setObjectName(u"keyView")
         self.splitter_2.addWidget(self.keyView)
-        self.defView = QListView(self.splitter_2)
+        self.defView = QListWidget(self.splitter_2)
         self.defView.setObjectName(u"defView")
         self.splitter_2.addWidget(self.defView)
 

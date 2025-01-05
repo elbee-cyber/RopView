@@ -2,7 +2,7 @@ from binaryninja import binaryview
 from binaryninjaui import View, ViewType
 from PySide6.QtCore import Qt
 from PySide6.QtGui import *
-from PySide6.QtWidgets import QTreeWidgetItem, QScrollArea, QListWidgetItem, QListWidget
+from PySide6.QtWidgets import QTreeWidgetItem, QScrollArea, QListWidgetItem, QListWidget, QListView
 from .ui.ui_mainwindow import Ui_Form
 from .GadgetAnalysis import GadgetAnalysis
 from .GadgetRender import GadgetRender
@@ -37,6 +37,7 @@ class RopView(QScrollArea, View):
 		binaryView.session_data['RopView']['cache']['sys_asm'] = {}
 		binaryView.session_data['RopView']['depth'] = 10
 		binaryView.session_data['RopView']['cache']['analysis'] = {}
+		binaryView.session_data['RopView']['presets'] = {}
 		binaryView.session_data['RopView']['analysis_enabled'] = True
 		binaryView.session_data['RopView']['cache_coherent'] = True
 		binaryView.session_data['RopView']['thumb'] = False
@@ -71,6 +72,13 @@ class RopView(QScrollArea, View):
 		self.curr_prestate = self.renderer.buildPrestate()
 		self.emu_queue = []
 
+		# Preset load
+		for preset, value in arch[binaryView.arch.name]['presets'].items():
+			if preset not in binaryView.session_data['RopView']['presets']:
+				binaryView.session_data['RopView']['presets'].update([(preset,value)])
+		self.ui.keyView.itemSelectionChanged.connect(self.selectedPresetValue)
+		self.updatePresetList()
+
 		# Search
 		self.searchfilter = None
 
@@ -79,6 +87,9 @@ class RopView(QScrollArea, View):
 
 		# Render
 		self.ui.lineEdit.returnPressed.connect(self.querySetup)
+
+		# Add preset
+		self.ui.presetButton.clicked.connect(self.addPreset)
 		
 		# Slot/signal, navigating gadget search pane populates analysis pane for selected gadget
 		self.ui.gadgetPane.itemSelectionChanged.connect(self.startAnalysis)
@@ -126,6 +137,7 @@ class RopView(QScrollArea, View):
 			curr += 1
 			update(curr,full)
 			self.binaryView.session_data['RopView']['gadget_asm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.gadget_asm").items()})
+			self.binaryView.session_data['RopView']['presets'].update({str(k):v for k,v in self.binaryView.query_metadata("RopView.presets").items()})
 		except:
 			return
 
@@ -141,6 +153,25 @@ class RopView(QScrollArea, View):
 			self.binaryView.navigate('Linear:ELF',addr)
 		except:
 			pass
+
+	def updatePresetList(self):
+		pane = self.ui.keyView
+		pane.clear()
+		pane.addItems(list(self.binaryView.session_data['RopView']['presets'].keys()))
+
+	def selectedPresetValue(self):
+		pane = self.ui.defView
+		pane.clear()
+		pane.addItems([self.binaryView.session_data['RopView']['presets'][self.ui.keyView.currentItem().text()]])
+
+	def addPreset(self):
+		if len(self.ui.keyEdit.toPlainText()) > 0 and len(self.ui.defEdit.toPlainText()) > 0:
+			self.binaryView.session_data['RopView']['presets'][self.ui.keyEdit.toPlainText()] = self.ui.defEdit.toPlainText()
+			self.binaryView.store_metadata("RopView.presets",self.binaryView.session_data['RopView']['presets'])
+			self.updatePresetList()
+			self.ui.presetStatus.setText("Preset added!")
+		else:
+			self.ui.presetStatus.setText("Invalid preset (Bad key or definition)")
 
 	def updatePrestate(self):
 		'''
