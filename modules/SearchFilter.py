@@ -15,11 +15,13 @@ class SearchFilter:
         self.buildDataFrame()
 
     def spawnQuery(self):
-        self.setStatus("Processing query...")
+        if not self.bv.session_data['RopView']['cache_coherent']:
+            self.buildDataFrame()
+            self.bv.session_data['RopView']['cache_coherent'] = True
+        self.setStatus("Searching...")
         execute_on_main_thread_and_wait(self.query)
 
     def query(self):
-        self.renderer.ui.resultsLabel.setText('')
         query = self.ui.lineEdit.text()
         gaveAttr = False
 
@@ -48,9 +50,9 @@ class SearchFilter:
             gaveAttr = True
         
         # Parse presets
-        for preset in arch[self.bv.arch.name]['presets']:
+        for preset, value in self.bv.session_data['RopView']['presets'].items():
             if preset in query:
-                query = query.replace(preset,arch[self.bv.arch.name]['presets'][preset])
+                query = query.replace(preset,value)
                 gaveAttr = True
 
         # Space mismatching
@@ -79,6 +81,7 @@ class SearchFilter:
         ## Transformation: ((reg[><=/*+-] or reg==FULL_CONTROL) and not reg==NOT_ANALYZED)
         replacements = []
         for reg in arch[self.bv.arch.name]['prestateOpts']:
+            reg = reg.replace('$','')
             if re.search(reg+'[\>\<=\-+\/*]',query) is not None:
                 reg_matches = re.finditer(reg+'[\>\<=\-+\/*]{1,2}',query)
                 for match in reg_matches:
@@ -117,9 +120,7 @@ class SearchFilter:
             if len(results) == 0:
                 self.setStatus("Semantic search failed",True)
             else:
-                self.setStatus("Semantic search completed")
-        else:
-            self.setStatus("Search completed")
+                self.setStatus("Semantic search completed")            
 
         # Build pool and update rendering
         if len(results) == 0:
@@ -142,7 +143,8 @@ class SearchFilter:
         for reg in self.__semanticRegs:
             include += "disasm.str.contains('"+reg+"') or "
         search_space = self.attemptQuery(include[:-4])
-        random.shuffle(search_space)
+        # Unshuffled gadgets offer quicker matches by sorting gadgets based on critical regs and pops
+        #random.shuffle(search_space)
 
         # Prevent exhaustion
         limit = int(self.ui.semanticBox.text())
@@ -190,7 +192,7 @@ class SearchFilter:
             for reg,val in reg_vals.items():
                 if reg not in self.full_df.columns:
                     continue
-                if reg not in allowed_regs:
+                if (reg not in allowed_regs) and ('$'+reg not in allowed_regs):
                     continue
                 if self.full_df.loc[self.full_df['addr'] == addr, reg].iloc[0] != REG_NOT_ANALYZED:
                     continue
@@ -202,14 +204,21 @@ class SearchFilter:
 
     def attemptQuery(self,query):
         results = []
+        # Remove unescaped $ chars
+        query = re.sub(r'[^\\]\$|^\$','',query)
+        debug_notify(query)
         try:
             resultsDF = self.full_df.query(query)
         except Exception as e:
             self.setStatus("Invalid query provided, please try again",True)
-            print(e)
+            debug_notify(str(e))
             return results
         for index, row in resultsDF.iterrows():
             results.append(row['addr'])
+        if len(results) == 0:
+            self.setStatus("No results found",True)
+        else:
+            self.setStatus("Search completed")
         return results
 
     def buildDataFrame(self):
@@ -231,7 +240,7 @@ class SearchFilter:
         self.bv.session_data['RopView']['dataframe'] = self.full_df
         # Add reg columns
         for reg in self.regs:
-            self.full_df[reg]=REG_NOT_ANALYZED
+            self.full_df[reg.replace('$','')]=REG_NOT_ANALYZED
 
     def setStatus(self,text,error=False):
         self.renderer.ui.resultsLabel.setText(text)

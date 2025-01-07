@@ -2,9 +2,9 @@ from PySide6.QtGui import *
 from PySide6.QtWidgets import QTreeWidgetItem, QTreeWidgetItemIterator
 from .GadgetSearch import GadgetSearch
 from .constants import *
-from binaryninja import show_message_box, run_progress_dialog, get_save_filename_input
-from PySide6.QtCore import QCoreApplication
-from .SearchFilter import SearchFilter
+from binaryninja import show_message_box, run_progress_dialog, get_save_filename_input, get_open_filename_input
+from PySide6.QtCore import QTimer
+import re
 
 class GadgetRender:
     '''
@@ -30,13 +30,10 @@ class GadgetRender:
         Configure default options, initial gadgetsearch, display right registers into prestate options ui.
         '''
         self.bad_bytes = []
-        self.depth = 16
+        self.depth = 10
         self.block = []
         self.address_range = []
         self.inst_cnt = 0
-        self.rop = True
-        self.jop = True
-        self.cop = True
         self.multi_branch = False
         self.duplicates = False
         self.dump = False
@@ -44,28 +41,58 @@ class GadgetRender:
         self.bv = bv
         self.bv_arch = bv.arch.name
         self.__selected = None
+        self.currentlyUnique = False
 
-        self.ui.badBytesEdit.textChanged.connect(self.prepareBadBytes)
-        self.ui.depthBox.textChanged.connect(self.prepareDepth)
-        self.ui.blockEdit.textChanged.connect(self.prepareBlock)
-        self.ui.rangeEdit.textChanged.connect(self.prepareRange)
-        self.ui.instCntSpinbox.textChanged.connect(self.prepareInstCnt)
+        options = {
+            'rop': True,
+            'jop': False,
+            'cop': False,
+            'sys': True
+        }
+
+        self.debounce_bb = QTimer()
+        self.debounce_bb.setInterval(2000)
+        self.debounce_bb.setSingleShot(True)
+        self.debounce_bb.timeout.connect(self.prepareBadBytes)
+
+        self.debounce_addr = QTimer()
+        self.debounce_addr.setInterval(2000)
+        self.debounce_addr.setSingleShot(True)
+        self.debounce_addr.timeout.connect(self.prepareRange)
+
+        self.debounce_block = QTimer()
+        self.debounce_block.setInterval(2000)
+        self.debounce_block.setSingleShot(True)
+        self.debounce_block.timeout.connect(self.prepareBlock)
+
+        self.debounce_instCnt = QTimer()
+        self.debounce_instCnt.setInterval(2000)
+        self.debounce_instCnt.setSingleShot(True)
+        self.debounce_instCnt.timeout.connect(self.prepareInstCnt)
+
+        self.debounce_depth = QTimer()
+        self.debounce_depth.setInterval(2000)
+        self.debounce_depth.setSingleShot(True)
+        self.debounce_depth.timeout.connect(self.prepareDepth)
+
+        self.ui.thumbOpt.setVisible(False)
+        self.ui.badBytesEdit.textChanged.connect(self.debounce_bb.start)
+        self.ui.depthBox.textChanged.connect(self.debounce_depth.start)
+        self.ui.blockEdit.textChanged.connect(self.debounce_block.start)
+        self.ui.rangeEdit.textChanged.connect(self.debounce_addr.start)
+        self.ui.instCntSpinbox.textChanged.connect(self.debounce_instCnt.start)
         self.ui.allOpt.clicked.connect(self.prepareRepeat)
         self.ui.ropOpt.clicked.connect(self.prepareROP)
         self.ui.copOpt.clicked.connect(self.prepareCOP)
         self.ui.jopOpt.clicked.connect(self.prepareJOP)
         self.ui.sysOpt.clicked.connect(self.preparesys)
         self.ui.dumpOpt.clicked.connect(self.prepareDump)
+        self.ui.thumbOpt.clicked.connect(self.prepareThumb)
         self.ui.clearCacheButton.clicked.connect(self.flush)
         self.ui.reloadButton.clicked.connect(self.gsearch)
         self.ui.exportButton.clicked.connect(self.export_gadgets)
+        self.ui.corefileButton.clicked.connect(self.corefileImport)
         self.__selectedItem = None
-
-        self.gs = GadgetSearch(bv)
-        if self.bv.session_data['RopView']['loading_canceled']:
-            self.search_canceled()
-        else:
-            self.update_and_sort()
 
         # Load the correct register names into the analysis prestate UI (Options tab)
         reg_label = getattr(self.ui,"reglabel",-1)
@@ -82,13 +109,28 @@ class GadgetRender:
                 reg_label.setVisible(False)
                 getattr(self.ui,"regedit_"+str(i)).setVisible(False)
             i += 1
+        
+        # Disable thumb option if not ARM
+        if 'armv7' == self.bv_arch:
+            self.ui.thumbOpt.setVisible(True)
+
+        # mips is jop only
+        if 'mips' in self.bv_arch:
+            self.ui.jopOpt.setChecked(True)
+            options['jop'] = True
+
+        # remove empty gadget classes
+        for pool in gadgets[self.bv_arch]:
+            if not gadgets[self.bv_arch][pool]:
+                getattr(self.ui,pool+"Opt").setVisible(False)
+                options[pool] = False
+
+        self.repool(self.depth,options['rop'],options['jop'],options['cop'],options['sys'])
 
     def update_and_sort(self,pool=None):
         '''
         Clears gadget search pane (ui)
         Re renders gadget search pane (ui)
-
-        Dont use recursion
         '''
         self.bv.session_data['RopView']['analysis_enabled'] = False
         self.__selected = self.ui.gadgetPane.selectedItems()
@@ -97,16 +139,24 @@ class GadgetRender:
             self.__selected = self.__selected[0].text(1)
         self.clear_gadgets()
         if pool is None:
-            res = self.sort(self.bv.session_data['RopView']['gadget_disasm'].copy()).items()
+            # Investigate here if options/semantic bugs
+            if len(self.ui.lineEdit.text()) > 0 and len(self.__allpool) > 0:
+                self.currentlyUnique = False
+                res = self.sort(self.__allpool).items()
+            else:
+                res = self.sort(self.bv.session_data['RopView']['gadget_disasm'].copy()).items()
         else:
+            self.currentlyUnique = False
             res = self.sort(pool).items()
         self.render_gadgets(res)
         self.bv.session_data['RopView']['analysis_enabled'] = True
         if self.__selectedItem is not None:
             self.__selectedItem.setSelected(True)
 
-    def repool(self,dep,rop,jop,cop,sys):
-        self.gs = GadgetSearch(self.bv,depth=dep,rop=rop,jop=jop,cop=cop,sys=sys)
+    def repool(self,dep,rop,jop,cop,sys,thumb=False):
+        self.gs = GadgetSearch(self.bv,depth=dep,rop=rop,jop=jop,cop=cop,sys=sys,thumb=thumb)
+        self.currentlyUnique = False
+        self.__allpool = self.bv.session_data['RopView']['gadget_disasm'].copy()
         if self.bv.session_data['RopView']['loading_canceled']:
             self.search_canceled()
         else:
@@ -118,6 +168,33 @@ class GadgetRender:
         '''
         self.ui.statusLabel.setText("")
         self.ui.gadgetPane.clear()
+
+    def corefileImport(self):
+        fpath = get_open_filename_input("corefile:")
+        '''
+        try:
+            cf = Corefile(fpath)
+            self.bv.session_data['RopView']['cf'] = cf
+        except Exception as e:
+            show_message_box("Invalid corefile!",str(e))
+
+        # Save prestates to edit
+        reg_values = []
+        for reg,val in cf.registers:
+            if reg in arch[self.bv_arch]['prestateOpts']:
+                reg_values.append(val)
+
+        # Update prestates
+        regedit = getattr(self.ui,"regedit",-1)
+        regedit.setText(str(reg_values[0]))
+        i = 2
+        while regedit != -1:
+            regedit = getattr(self.ui,"regedit_"+str(i),-1)
+            if regedit == -1:
+                break
+            regedit.setText(str(reg_values[i]))
+            i += 1
+        '''
 
     def search_canceled(self):
         self.ui.gadgetPane.clear()
@@ -164,51 +241,56 @@ class GadgetRender:
                 continue
             used.append(val)
 
-    def sort(self, pool):
+    def sort(self,pool):
         '''
         Sorting logic according to options done here. Some options will require a new gadget search be done in (update gs)
         before actual sorting can take place (ei depth)
         '''
+        self.__allpool = pool
+
         # Duplicates
+        if len(self.ui.lineEdit.text()) > 0:
+            self.currentlyUnique = False
         if not self.duplicates:
-            self.__allpool = pool
-            run_progress_dialog("Removing duplicates",False,self.remove_dups)
-            pool = self.__allpool
+            if not self.currentlyUnique:
+                run_progress_dialog("Removing duplicates",False,self.remove_dups)
+                pool = self.__allpool
+                self.currentlyUnique = True
+        else:
+            self.currentlyUnique = False
+
+        pool = self.__allpool
+        temp = pool.copy()
 
         # Bad bytes sort
         if self.bad_bytes != []:
             for b in self.bad_bytes:
                 for addr in list(pool.keys()):
                     if b in hex(addr):
-                        pool.pop(addr)
+                        if addr in pool:
+                            pool.pop(addr)
 
         # Hard pnemonic block sort
         if self.block != []:
-            try:
-                for insn in self.block:
-                    for key,val in pool.items():
-                        if insn in val:
+            for insn in self.block:
+                for key,val in temp.items():
+                    if insn in val:
+                        if key in pool:
                             pool.pop(key)
-            except RuntimeError:
-                pool = self.sort(pool)
 
         # Address range sort
         if self.address_range != []:
-            try:
-                for a in list(pool.keys()):
-                    if not (a > self.address_range[0] and a < self.address_range[1]):
+            for a in list(pool.keys()):
+                if not (a > self.address_range[0] and a < self.address_range[1]):
+                    if a in pool:
                         pool.pop(a)
-            except RuntimeError:
-                pool = self.sort(pool)
 
         # Inst cnt
         if self.inst_cnt != 0:
-            try:
-                for key, val in pool.items():
-                    if len(val.split(';'))-1 > self.inst_cnt:
+            for key, val in temp.items():
+                if len(val.split(';'))-1 > self.inst_cnt:
+                    if key in pool:
                         pool.pop(key)
-            except RuntimeError:
-                pool = self.sort(pool)
 
         return pool
 
@@ -269,7 +351,10 @@ class GadgetRender:
         jop = self.gs.jop
         cop = self.gs.cop
         sys = self.gs.sys
-        self.repool(dep,rop,jop,cop,sys)
+        thumb = self.ui.thumbOpt.isChecked()
+        fflush(self.bv)
+        self.bv.session_data['RopView']['cache_coherent'] = False
+        self.repool(dep,rop,jop,cop,sys,thumb=thumb)
 
     def prepareBlock(self):
         '''
@@ -286,20 +371,20 @@ class GadgetRender:
 
     def prepareRange(self):
         self.address_range = []
-        addr = self.ui.rangeEdit.text().split('-')
-        try:
-            self.address_range.append(int(addr[0],16))
-            self.address_range.append(int(addr[1],16))
-        except:
-            pass
-        self.update_and_sort()
+        if re.match('0x[0-9a-f]*-0x[0-9a-f]*',self.ui.rangeEdit.text()) is not None:
+            addr = self.ui.rangeEdit.text().split('-')
+            try:
+                self.address_range.append(int(addr[0],16))
+                self.address_range.append(int(addr[1],16))
+            except:
+                self.address_range = []
+                return
+            self.update_and_sort()
 
     def prepareInstCnt(self):
-        self.inst_cnt = 0
-        cnt = int(self.ui.instCntSpinbox.text())
-        if cnt != 0:
-            self.inst_cnt = cnt
-        self.update_and_sort()
+        self.inst_cnt = int(self.ui.instCntSpinbox.text())
+        if self.inst_cnt != 0:
+            self.update_and_sort()
 
     def prepareRepeat(self):
         self.duplicates = self.ui.allOpt.isChecked()
@@ -308,7 +393,10 @@ class GadgetRender:
         jop = self.gs.jop
         cop = self.gs.cop
         sys = self.gs.sys
-        self.repool(dep,rop,jop,cop,sys)
+        thumb = self.ui.thumbOpt.isChecked()
+        fflush(self.bv)
+        self.bv.session_data['RopView']['cache_coherent'] = False
+        self.repool(dep,rop,jop,cop,sys,thumb=thumb)
 
     def prepareROP(self):
         rop = self.ui.ropOpt.isChecked()
@@ -316,7 +404,8 @@ class GadgetRender:
         jop = self.gs.jop
         cop = self.gs.cop
         sys = self.gs.sys
-        self.repool(dep,rop,jop,cop,sys)
+        thumb = self.ui.thumbOpt.isChecked()
+        self.repool(dep,rop,jop,cop,sys,thumb=thumb)
 
     def prepareCOP(self):
         cop = self.ui.copOpt.isChecked()
@@ -324,7 +413,8 @@ class GadgetRender:
         rop = self.gs.rop
         jop = self.gs.jop
         sys = self.gs.sys
-        self.repool(dep,rop,jop,cop,sys)
+        thumb = self.ui.thumbOpt.isChecked()
+        self.repool(dep,rop,jop,cop,sys,thumb=thumb)
 
     def prepareJOP(self):
         jop = self.ui.jopOpt.isChecked()
@@ -332,7 +422,22 @@ class GadgetRender:
         rop = self.gs.rop
         cop = self.gs.cop
         sys = self.gs.sys
-        self.repool(dep,rop,jop,cop,sys)
+        thumb = self.ui.thumbOpt.isChecked()
+        self.repool(dep,rop,jop,cop,sys,thumb=thumb)
+
+    def prepareThumb(self):
+        rop = self.gs.rop
+        jop = self.gs.jop
+        cop = self.gs.cop
+        dep = self.gs.depth
+        sys = self.gs.sys
+        thumb = self.ui.thumbOpt.isChecked()
+        fflush(self.bv)
+        self.bv.session_data['RopView']['gadget_disasm'] = {}
+        self.bv.session_data['RopView']['gadget_asm'] = {}
+        self.bv.session_data['RopView']['cache_coherent'] = False
+        self.bv.session_data['RopView']['thumb'] = thumb
+        self.repool(dep,rop,jop,cop,sys,thumb=thumb)
 
     def preparesys(self):
         sys = self.ui.sysOpt.isChecked()
@@ -340,10 +445,17 @@ class GadgetRender:
         rop = self.gs.rop
         jop = self.gs.jop
         cop = self.gs.cop
-        self.repool(dep,rop,jop,cop,sys)
+        thumb = self.ui.thumbOpt.isChecked()
+        self.repool(dep,rop,jop,cop,sys,thumb=thumb)
 
     def export_gadgets(self):
-        self.bv.session_data['RopView']['dataframe'].to_csv(get_save_filename_input("filename:", "csv", "gadgets.csv"), sep='\t\t\t\t')
+        if self.bv.session_data['RopView']['dataframe'] is not None:
+            df = self.bv.session_data['RopView']['dataframe'].copy()
+            df.replace(REG_CONTROLLED,'Controlled',inplace=True)
+            df.replace(REG_NOT_ANALYZED,'Unanalyzed',inplace=True)
+            df.to_csv(get_save_filename_input("filename:", "csv", "gadgets.csv"), sep='\t')
+        else:
+            show_message_box("Dataframe uninitialized","Start a search to create dataframe")
 
     def flush(self):
         fflush(self.bv)
@@ -355,7 +467,8 @@ class GadgetRender:
         rop = self.gs.rop
         jop = self.gs.jop
         cop = self.gs.cop
-        self.repool(dep,rop,jop,cop,sys)
+        thumb = self.ui.thumbOpt.isChecked()
+        self.repool(dep,rop,jop,cop,sys,thumb=thumb)
         
 
     def prepareDump(self):

@@ -42,7 +42,14 @@ class GadgetAnalysis:
         self.instructions.pop()
 
         # Architecture, bitmode and corresponding registers
-        self._arch = bv.arch.name
+        try:
+            if self.bv.session_data['RopView']['thumb']:
+                self._arch = 'thumb'
+            else:
+                self._arch = bv.arch.name
+        except:
+            self.bv.session_data['RopView']['thumb'] = False
+
         self.bm = int(arch[self._arch]['bitmode']/8)
         self.registers = arch[self._arch]['registers']
 
@@ -94,8 +101,9 @@ class GadgetAnalysis:
         # Instruction count
         self.inst_cnt = self.gadget_str.count(';')
 
-        # Cyclic data copied onto the emu stack based on gadget length
-        self.__cyclic_data = self.cyclic(self.inst_cnt*2)
+        # Cyclic data copied onto the emu stack based on gadget length (is there a deterministic way to get stack size w/o checking tokens)
+        #self.__cyclic_data = self.cyclic(self.inst_cnt*(self.gadget_str.count(',')+1)*2)
+        self.__cyclic_data = self.cyclic(0x1000)
 
         # Resolved mappings saved here
         self.derefs = []
@@ -117,9 +125,16 @@ class GadgetAnalysis:
         mu.mem_protect(0x1000, 0x1000, (UC_PROT_READ+UC_PROT_EXEC))
 
         # stack
-        mu.mem_map(0x2000,0x1000)
-        mu.mem_write(0x2100,self.__cyclic_data[0])
-        mu.mem_protect(0x2000,0x1000,(UC_PROT_READ+UC_PROT_WRITE))
+        stack_size = 0x1000
+        while True:
+            try:
+                mu.mem_map(0x2000,stack_size)
+                mu.mem_write(0x2100,self.__cyclic_data[0])
+                mu.mem_protect(0x2000,stack_size,(UC_PROT_READ+UC_PROT_WRITE))
+                break
+            except:
+                mu.mem_unmap(0x2000,stack_size)
+                stack_size *= 2
         mu.reg_write(arch[self._arch]['uregs']['sp'],0x2100)
 
         # Used recursively for realtime memory resolving (binary->emulation)
@@ -140,6 +155,9 @@ class GadgetAnalysis:
         # Holds the last non-corrupted stack pointer value
         self.__last_addr = 0x2100
 
+        # Holds the last pc loc to detect branching
+        self.__last_pc = 0x1000
+
         # Add hook for step analysis
         ch = mu.hook_add(UC_HOOK_CODE, self.analyze_step)
 
@@ -148,6 +166,14 @@ class GadgetAnalysis:
 
         # Emulate and analyze
         self._emulate(mu, mappings)
+
+        # Get the final register context
+        ## Should this only be set to RISC architectures?
+        context = {}
+        for reg in self.registers:
+            context[reg] = mu.reg_read(arch[self._arch]['uregs'][reg])
+        
+        diff = self.reg_diff(context)
 
         # Hook del
         mu.hook_del(ch)
@@ -163,22 +189,31 @@ class GadgetAnalysis:
                 if value in self.__cyclic_data[1]:
                     self.results[i][key] = 'Full control (stack) (offset {})'.format(str(int(self.__cyclic_data[1].index(value)*self.bm)))
             i += 1
-    
-        # Save in cache
-        if self.gadget_str not in self.emulated:
-            self.emulated[self.gadget_str] = self.results.copy()
-        self.build_endstate()
-        
-        # Save fail
-        self.saved_fails[self.gadget_str] = self.err
-
-        # Build used_regs based off of clobbered registers and their prestate values
-        for reg in self.clobbered:
-            self.used_regs[reg] = self.prestate[reg]
+        for key,value in diff.items():
+            if value in self.__cyclic_data[1]:
+                diff[key] = 'Full control (stack) (offset {})'.format(str(int(self.__cyclic_data[1].index(value)*self.bm)))
 
         # Save err_desc as step value for halted instruction
         if self.err != 0:
             self.results.append({'Analysis halted':err_desc[self.err]})
+        else:
+            # Save diffed registers to clobbered
+            for reg in list(diff.keys()):
+                if reg not in self.clobbered:
+                    self.clobbered.append(reg)
+            self.results.append(diff)
+        
+        # Build used_regs based off of clobbered registers and their prestate values
+        for reg in self.clobbered:
+            self.used_regs[reg] = self.prestate[reg]
+
+        # Save in cache
+        if self.gadget_str not in self.emulated:
+            self.emulated[self.gadget_str] = self.results.copy()
+        self.build_endstate()
+
+        # Save fail
+        self.saved_fails[self.gadget_str] = self.err
 
         return (self.results, self.err)
 
@@ -260,6 +295,8 @@ class GadgetAnalysis:
 
         try:
             # Attempt emulation
+            if self._arch == 'thumb':
+                start = start | 1
             mu.emu_start(start,0x1000+len(self._gadget_Raw),count=self.inst_cnt)
             mu.hook_del(h)
             if self.err == GA_ERR_INTR:
@@ -393,7 +430,10 @@ class GadgetAnalysis:
         '''
         for state in self.results:
             for reg in list(state.keys()):
-                self.end_state[reg] = state[reg]
+                if '$' in reg:
+                    self.end_state[reg.replace('$','')] = state[reg]
+                else:
+                    self.end_state[reg] = state[reg]
         self.saved_end_states[self.gadget_str] = self.end_state.copy()
     
     def reg_diff(self,context):
@@ -404,6 +444,8 @@ class GadgetAnalysis:
         '''
         diff = {}
         for reg,val in context.items():
+            if reg not in self.last_state:
+                continue
             if context[reg] != self.last_state[reg]:
                 diff[reg] = context[reg]
         remove = []
@@ -476,19 +518,29 @@ class GadgetAnalysis:
             if reg not in self.clobbered:
                 self.clobbered.append(reg)
 
+        # Check if branch occured
+        if abs(address - self.__last_pc) > 16:
+            diff['Control flow changed'] = 'Branch to '+hex(address)
+        self.__last_pc = address
+
         # If last execution cycle an unresolved write/write (recoverable) occured, add the value of the deref to the diff
-        if self.err == GA_ERR_WRITE_UNRESOLVED:
-            self.err = 0
-            diff[hex(self.derefs[-1])] = str(bytes(mu.mem_read(self.derefs[-1],8))) + ' ({})'.format(self.bv.get_sections_at(self.derefs[-1])[0].name)
-        if self.err == GA_ERR_READ_UNRESOLVED:
-            self.err = 0
-            diff['Reads from '+hex(self.derefs[-1])] = str(bytes(mu.mem_read(self.derefs[-1],8))) + ' ({})'.format(self.bv.get_sections_at(self.derefs[-1])[0].name)
+        if self.err == GA_ERR_WRITE_UNRESOLVED and len(self.derefs) > 0:
+            try:
+                diff[hex(self.derefs[-1])] = str(bytes(mu.mem_read(self.derefs[-1],8))) + ' ({})'.format(self.bv.get_sections_at(self.derefs[-1])[0].name)
+                self.err = 0
+            except:
+                pass
+        if self.err == GA_ERR_READ_UNRESOLVED and len(self.derefs) > 0:
+            try:
+                diff['Reads from '+hex(self.derefs[-1])] = str(bytes(mu.mem_read(self.derefs[-1],8))) + ' ({})'.format(self.bv.get_sections_at(self.derefs[-1])[0].name)
+                self.err = 0
+            except:
+                pass
         # If the stack pointer is corrupted, add to diff
         if corrupt:
             sp = arch[self._arch]['sp'][0]
             diff[sp] = 'Stack pivot (stack)'
             self.clobbered.append(sp)
-        
         # Update diff for current step
         self.results.append(diff)
 

@@ -7,7 +7,7 @@ class GadgetSearch:
     Discovers ROP gadgets in executable segments of memory.
     """
 
-    def __init__(self, bv, depth=10, rop=True, jop=False, cop=False, sys=True):
+    def __init__(self, bv, depth=10, rop=True, jop=False, cop=False, sys=True, thumb=False):
         """
         Responsible for gadget searching with applied options. 
         Find all control instructions in executable segments and count back by depth, saving each gadget
@@ -19,12 +19,16 @@ class GadgetSearch:
         self.rop, self.jop, self.cop, self.depth, self.sys = rop, jop, cop, depth, sys
         self.__cache = ''
         self.__bv = bv
+        self.arch = bv.arch.name
 
         ### !! GadgetSearch should be the only entity allowed to modify this !! ###
         # Dict of gadget mnemonics {addr:str}
         bv.session_data['RopView']['gadget_disasm'] = {}
         # Dict of raw gadgets {addr:bytes}
         bv.session_data['RopView']['gadget_asm'] = {}
+
+        if thumb:
+            self.arch = 'thumb'
 
         # Load from cache or prepare for search
         self.__control_insn = ()
@@ -33,25 +37,25 @@ class GadgetSearch:
                 self.__cache = 'rop'
                 run_progress_dialog("Loading ROP cache",False,self.load_from_cache)
             else:
-                self.__control_insn += gadgets[bv.arch.name]['rop']
+                self.__control_insn += gadgets[self.arch]['rop']
         if jop:
             if (bv.session_data['RopView']['cache']['jop_disasm'] != {}) and (depth == bv.session_data['RopView']['depth']):
                 self.__cache = 'jop'
                 run_progress_dialog("Loading JOP cache",False,self.load_from_cache)
             else:
-                self.__control_insn += gadgets[bv.arch.name]['jop']
+                self.__control_insn += gadgets[self.arch]['jop']
         if cop:
             if (bv.session_data['RopView']['cache']['cop_disasm'] != {}) and (depth == bv.session_data['RopView']['depth']):
                 self.__cache = 'cop'
                 run_progress_dialog("Loading COP cache",False,self.load_from_cache)
             else:
-                self.__control_insn += gadgets[bv.arch.name]['cop']
+                self.__control_insn += gadgets[self.arch]['cop']
         if sys:
             if (bv.session_data['RopView']['cache']['sys_disasm'] != {}) and (depth == bv.session_data['RopView']['depth']):
                 self.__cache = 'sys'
                 run_progress_dialog("Loading SYS cache",False,self.load_from_cache)
             else:
-                self.__control_insn += gadgets[bv.arch.name]['sys']
+                self.__control_insn += gadgets[self.arch]['sys']
 
         # Save depth
         bv.session_data['RopView']['depth'] = depth
@@ -61,17 +65,24 @@ class GadgetSearch:
 
     def loadGadgets(self,update):
         # Capstone instance used for disassembly
-        md = Cs(capstone_arch[self.__bv.arch.name], bitmode(self.__bv.arch.name))
+        md = Cs(capstone_arch[self.arch], bitmode(self.arch))
 
-        # Used to check for duplicates
-        used_gadgets = []
+        ds = arch[self.arch]['delay_slot']
 
         # update
         curr = self.__bv.start
         last_iter = 0
         full = (self.__bv.end-self.__bv.start) * len(self.__control_insn)
+        if self.arch == 'thumb':
+            alignment = 2
+        else:
+            alignment = arch[self.arch]['alignment']
 
         for ctrl in self.__control_insn:
+            # Exists incase a group is len==1
+            if ctrl == ():
+                continue
+
             # Used for progress iter
             last_iter +=1
 
@@ -80,8 +91,16 @@ class GadgetSearch:
             while curr_site is not None:
                 # Find potential gadget site
                 curr_site = self.__bv.find_next_data(curr_site,ctrl[0])
+
                 if curr_site is None:
                     break
+                elif alignment != 1:
+                    curr_site -= (alignment-len(ctrl[0]))
+
+                # Alignment==1 if no alignment
+                if curr_site % alignment != 0:
+                    curr_site += alignment
+                    continue
 
                 # Saved to increase after depth search
                 save = curr_site
@@ -93,16 +112,25 @@ class GadgetSearch:
                     self.__bv.session_data['RopView']['gadget_asm'] = {}
                     fflush(self.__bv)
                     return False
+                
 
                 # Confirm the gadget site contains the current control instruction
                 if re.match(ctrl[2],self.__bv.read(curr_site,ctrl[1])) is not None:
                     for i in range(0,self.depth):
-                        if not self.__bv.get_segment_at(curr_site).executable:
+                        segment = self.__bv.get_segment_at(curr_site)
+
+                        if segment is None or not segment.executable:
                             break
                         else:
-                            curr_site = save-i
+                            index = i*alignment
+                            curr_site = save-index
+                            insn_size = index+ctrl[1]
 
-                            insn = self.__bv.read(curr_site,i+ctrl[1])
+                            # Handle delay slots
+                            if ds:
+                                insn_size += 4
+
+                            insn = self.__bv.read(curr_site,insn_size)
                             disasm = ''
                             for val in md.disasm(insn,0x1000):
                                 disasm += val.mnemonic + ' ' + val.op_str + ' ; '
@@ -110,7 +138,7 @@ class GadgetSearch:
 
                             # Check blacklisted interrupts
                             contains_block = False
-                            for block in arch[self.__bv.arch.name]['blacklist']:
+                            for block in arch[self.arch]['blacklist']:
                                 if block in disasm:
                                     contains_block = True
                                     break
@@ -119,39 +147,51 @@ class GadgetSearch:
 
                             # Double gadget check
                             occured = 0
-                            for mnemonic in gadgets[self.__bv.arch.name]['mnemonics']:
-                                if mnemonic in disasm:
-                                    occured += disasm.count(mnemonic)
+                            for mnemonic in gadgets[self.arch]['mnemonics']:
+                                matches = len(re.findall(mnemonic,disasm))
+                                if matches > 0:
+                                    occured += matches
                             if occured > 1:
-                                break
+                                continue
                             
                             # Broken gadget check
-                            if disasm == '' or disasm == ' ' or ctrl[3] not in disasm.split(';')[-2]:
+                            if not disasm == '' and not disasm == ' ':
+                                tokened = disasm.split(';')
+                                if ds:
+                                    # tokened[-1] is empty, tokened [-2] is delay slot, tokened[-3] is ctrl
+                                    if len(tokened) < 3:
+                                        continue
+                                    broken = ctrl[3] not in tokened[-3]
+                                else:
+                                    broken = ctrl[3] not in tokened[-2]
+                                if broken:
+                                    continue
+                            else:
                                 continue
 
                             # Cache (cache should contain ALL gadget sites) (ive heard .update(tuple) is faster than .update(dict))
-                            if ctrl in gadgets[self.__bv.arch.name]['rop']:
+                            if ctrl in gadgets[self.arch]['rop']:
                                 self.__bv.session_data['RopView']['cache']['rop_disasm'].update([(curr_site, disasm)])
                                 self.__bv.session_data['RopView']['cache']['rop_asm'].update([(curr_site, insn)])
-                            elif ctrl in gadgets[self.__bv.arch.name]['jop']:
+                            elif ctrl in gadgets[self.arch]['jop']:
                                 self.__bv.session_data['RopView']['cache']['jop_disasm'].update([(curr_site, disasm)])
                                 self.__bv.session_data['RopView']['cache']['jop_asm'].update([(curr_site, insn)])
-                            elif ctrl in gadgets[self.__bv.arch.name]['cop']:
+                            elif ctrl in gadgets[self.arch]['cop']:
                                 self.__bv.session_data['RopView']['cache']['cop_disasm'].update([(curr_site, disasm)])
                                 self.__bv.session_data['RopView']['cache']['cop_asm'].update([(curr_site, insn)])
-                            elif ctrl in gadgets[self.__bv.arch.name]['sys']:
+                            elif ctrl in gadgets[self.arch]['sys']:
                                 self.__bv.session_data['RopView']['cache']['sys_disasm'].update([(curr_site, disasm)])
                                 self.__bv.session_data['RopView']['cache']['sys_asm'].update([(curr_site, insn)])
-                            
+
                             # All checks passed, save to pool
                             self.__bv.session_data['RopView']['gadget_disasm'].update([(curr_site, disasm)])
                             self.__bv.session_data['RopView']['gadget_asm'].update([(curr_site, insn)])
 
                 # Next address for search
-                curr_site = save+1
+                curr_site = save+alignment
         
         # Save metadata to bv
-        worker_priority_enqueue(self.saveCache)
+        worker_interactive_enqueue(self.saveCache)
 
         return True
 

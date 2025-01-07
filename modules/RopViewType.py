@@ -2,14 +2,13 @@ from binaryninja import binaryview
 from binaryninjaui import View, ViewType
 from PySide6.QtCore import Qt
 from PySide6.QtGui import *
-from PySide6.QtWidgets import QTreeWidgetItem, QScrollArea, QListWidgetItem, QListWidget
+from PySide6.QtWidgets import QTreeWidgetItem, QScrollArea, QListWidgetItem, QListWidget, QListView
 from .ui.ui_mainwindow import Ui_Form
 from .GadgetAnalysis import GadgetAnalysis
 from .GadgetRender import GadgetRender
 from .SearchFilter import SearchFilter
 from binaryninja import *
 from .constants import *
-import copy
 
 class RopView(QScrollArea, View):
 	'''
@@ -38,8 +37,12 @@ class RopView(QScrollArea, View):
 		binaryView.session_data['RopView']['cache']['sys_asm'] = {}
 		binaryView.session_data['RopView']['depth'] = 10
 		binaryView.session_data['RopView']['cache']['analysis'] = {}
+		binaryView.session_data['RopView']['presets'] = {}
 		binaryView.session_data['RopView']['analysis_enabled'] = True
-		binaryView.session_data['RopView']['search_initialized'] = False
+		binaryView.session_data['RopView']['cache_coherent'] = True
+		binaryView.session_data['RopView']['thumb'] = False
+		binaryView.session_data['RopView']['dataframe'] = None
+		binaryView.session_data['RopView']['cf'] = None
 
 		# Base UI
 		QScrollArea.__init__(self, parent)
@@ -70,6 +73,13 @@ class RopView(QScrollArea, View):
 		self.curr_prestate = self.renderer.buildPrestate()
 		self.emu_queue = []
 
+		# Preset load
+		for preset, value in arch[binaryView.arch.name]['presets'].items():
+			if preset not in binaryView.session_data['RopView']['presets']:
+				binaryView.session_data['RopView']['presets'].update([(preset,value)])
+		self.ui.keyView.itemSelectionChanged.connect(self.selectedPresetValue)
+		self.updatePresetList()
+
 		# Search
 		self.searchfilter = None
 
@@ -78,6 +88,9 @@ class RopView(QScrollArea, View):
 
 		# Render
 		self.ui.lineEdit.returnPressed.connect(self.querySetup)
+
+		# Add preset
+		self.ui.presetButton.clicked.connect(self.addPreset)
 		
 		# Slot/signal, navigating gadget search pane populates analysis pane for selected gadget
 		self.ui.gadgetPane.itemSelectionChanged.connect(self.startAnalysis)
@@ -125,6 +138,7 @@ class RopView(QScrollArea, View):
 			curr += 1
 			update(curr,full)
 			self.binaryView.session_data['RopView']['gadget_asm'].update({int(k):v for k,v in self.binaryView.query_metadata("RopView.gadget_asm").items()})
+			self.binaryView.session_data['RopView']['presets'].update({str(k):v for k,v in self.binaryView.query_metadata("RopView.presets").items()})
 		except:
 			return
 
@@ -140,6 +154,25 @@ class RopView(QScrollArea, View):
 			self.binaryView.navigate('Linear:ELF',addr)
 		except:
 			pass
+
+	def updatePresetList(self):
+		pane = self.ui.keyView
+		pane.clear()
+		pane.addItems(list(self.binaryView.session_data['RopView']['presets'].keys()))
+
+	def selectedPresetValue(self):
+		pane = self.ui.defView
+		pane.clear()
+		pane.addItems([self.binaryView.session_data['RopView']['presets'][self.ui.keyView.currentItem().text()]])
+
+	def addPreset(self):
+		if len(self.ui.keyEdit.toPlainText()) > 0 and len(self.ui.defEdit.toPlainText()) > 0:
+			self.binaryView.session_data['RopView']['presets'][self.ui.keyEdit.toPlainText()] = self.ui.defEdit.toPlainText()
+			self.binaryView.store_metadata("RopView.presets",self.binaryView.session_data['RopView']['presets'])
+			self.updatePresetList()
+			self.ui.presetStatus.setText("Preset added!")
+		else:
+			self.ui.presetStatus.setText("Invalid preset (Bad key or definition)")
 
 	def updatePrestate(self):
 		'''
@@ -162,7 +195,8 @@ class RopView(QScrollArea, View):
 				del ga
 			except:
 				pass
-		worker_interactive_enqueue(self.gadgetAnalysis)
+		# To avoid crashes due to scrolling (and huge worker queues)
+		execute_on_main_thread_and_wait(self.gadgetAnalysis)
 
 	def querySetup(self):
 		if len(self.binaryView.session_data['RopView']['gadget_disasm']) > 0 and self.searchfilter is None:
@@ -213,7 +247,7 @@ class RopView(QScrollArea, View):
 		beforeLabel.setFont(labelFont)
 		detailPane.addItem(beforeLabel)
 
-		if ga.used_regs == {}:
+		if not ga.used_regs:
 			item = QListWidgetItem(detailPane)
 			item.setText("No registers to list (gadget doesn't clobber)")
 			item.setFont(itemFont)
@@ -233,8 +267,8 @@ class RopView(QScrollArea, View):
 		for inst in ga.instructions:
 			space = QListWidgetItem(detailPane)
 			detailPane.addItem(space)
-			if inst == ga.instructions[-1]:
-				break
+			# if inst == ga.instructions[-1]:
+			# 	break
 			if inst[0] == ' ':
 				inst = inst[1:]
 			itemLabel = QListWidgetItem(detailPane)
@@ -254,6 +288,9 @@ class RopView(QScrollArea, View):
 			i += 1
 
 		# End state
+		if len(ga.instructions) == len(effects):
+			space = QListWidgetItem(detailPane)
+			detailPane.addItem(space)
 		afterLabel = QListWidgetItem(detailPane)
 		afterLabel.setText("After analysis:")
 		afterLabel.setFont(labelFont)
@@ -283,7 +320,7 @@ class RopView(QScrollArea, View):
 			detailPane.addItem(itemBody)
 			return
 
-		if ga.end_state == {}:
+		if not ga.end_state:
 			item = QListWidgetItem(detailPane)
 			item.setText("No registers to list (gadget doesn't clobber)")
 			item.setFont(itemFont)
