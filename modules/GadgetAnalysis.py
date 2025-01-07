@@ -101,8 +101,9 @@ class GadgetAnalysis:
         # Instruction count
         self.inst_cnt = self.gadget_str.count(';')
 
-        # Cyclic data copied onto the emu stack based on gadget length
-        self.__cyclic_data = self.cyclic(self.inst_cnt*(self.gadget_str.count(',')+1)*2)
+        # Cyclic data copied onto the emu stack based on gadget length (is there a deterministic way to get stack size w/o checking tokens)
+        #self.__cyclic_data = self.cyclic(self.inst_cnt*(self.gadget_str.count(',')+1)*2)
+        self.__cyclic_data = self.cyclic(0x1000)
 
         # Resolved mappings saved here
         self.derefs = []

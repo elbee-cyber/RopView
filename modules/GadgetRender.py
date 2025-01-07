@@ -2,7 +2,7 @@ from PySide6.QtGui import *
 from PySide6.QtWidgets import QTreeWidgetItem, QTreeWidgetItemIterator
 from .GadgetSearch import GadgetSearch
 from .constants import *
-from binaryninja import show_message_box, run_progress_dialog, get_save_filename_input
+from binaryninja import show_message_box, run_progress_dialog, get_save_filename_input, get_open_filename_input
 from PySide6.QtCore import QTimer
 import re
 
@@ -91,6 +91,7 @@ class GadgetRender:
         self.ui.clearCacheButton.clicked.connect(self.flush)
         self.ui.reloadButton.clicked.connect(self.gsearch)
         self.ui.exportButton.clicked.connect(self.export_gadgets)
+        self.ui.corefileButton.clicked.connect(self.corefileImport)
         self.__selectedItem = None
 
         # Load the correct register names into the analysis prestate UI (Options tab)
@@ -167,6 +168,33 @@ class GadgetRender:
         '''
         self.ui.statusLabel.setText("")
         self.ui.gadgetPane.clear()
+
+    def corefileImport(self):
+        fpath = get_open_filename_input("corefile:")
+        '''
+        try:
+            cf = Corefile(fpath)
+            self.bv.session_data['RopView']['cf'] = cf
+        except Exception as e:
+            show_message_box("Invalid corefile!",str(e))
+
+        # Save prestates to edit
+        reg_values = []
+        for reg,val in cf.registers:
+            if reg in arch[self.bv_arch]['prestateOpts']:
+                reg_values.append(val)
+
+        # Update prestates
+        regedit = getattr(self.ui,"regedit",-1)
+        regedit.setText(str(reg_values[0]))
+        i = 2
+        while regedit != -1:
+            regedit = getattr(self.ui,"regedit_"+str(i),-1)
+            if regedit == -1:
+                break
+            regedit.setText(str(reg_values[i]))
+            i += 1
+        '''
 
     def search_canceled(self):
         self.ui.gadgetPane.clear()

@@ -18,10 +18,10 @@ class SearchFilter:
         if not self.bv.session_data['RopView']['cache_coherent']:
             self.buildDataFrame()
             self.bv.session_data['RopView']['cache_coherent'] = True
+        self.setStatus("Searching...")
         execute_on_main_thread_and_wait(self.query)
 
     def query(self):
-        self.renderer.ui.resultsLabel.setText('')
         query = self.ui.lineEdit.text()
         gaveAttr = False
 
