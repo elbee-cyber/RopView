@@ -37,6 +37,12 @@ class SearchFilter:
                 query = query.replace('disasm.','disasm.str.')
             gaveAttr = True
 
+        # Parse loc option
+        if 'loc' in query:
+            if 'loc.' in query:
+                query = query.replace('loc.','loc.str.')
+            gaveAttr = True
+
         # Parse bytes option
         if 'bytes' in query:
             if 'bytes.' in query:
@@ -225,15 +231,18 @@ class SearchFilter:
 
     def buildDataFrame(self):
         raw = []
+        loc = []
         inst_cnt = []
 
         # Append bytes and size searchables
         for addr,asm in self.bv.session_data['RopView']['gadget_asm'].items():
             raw.append(asm.hex())
+            loc.append(hex(addr))
             inst_cnt.append(self.bv.session_data['RopView']['gadget_disasm'][addr].count(';'))
 
         gadget_data = {
             'addr':list(self.bv.session_data['RopView']['gadget_asm'].keys()),
+            'loc':loc,
             'bytes':raw,
             'inst_cnt':inst_cnt,
             'disasm':list(self.bv.session_data['RopView']['gadget_disasm'].values())
