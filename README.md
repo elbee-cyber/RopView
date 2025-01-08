@@ -7,10 +7,12 @@ RopView is a gadget analysis framework for BinaryNinja capable of granular per-i
 # Features
 ## Gadget Search
 Gadget searching and pooling is fully integrated into the BinaryView and takes advantage of the currently loaded session for quick discovery and caching, making it faster than many similar ROP tools. Additionally, the usual options are available to configure the search settings and constrain the gadget pool appropriately. For a detailed technical explanation, refer to [this post](https://faultpoint.com/post/2024-06-02-binja-plugin-ropview/).
+
 ![1.gif](images/1.gif)
 
 ## Gadget Analysis
 In the right pane, an analysis is shown of the currently selected gadget in the pool. This pane details the effects of the gadget on memory locations, clobbered registers, and accesses made to the stack or other memory regions. The analysis shows a start state, intermediary step states, and an end state. The analysis framework takes advantage of [unicorn engine](https://www.unicorn-engine.org/) and can return a report instantly. Internally, this is done using different hooks to add analysis and diffing functionality in the fetch-execute cycle. Furthermore, access violations are hooked to resolve fetched mappings from the target binary into the analysis context in realtime as they are requested. Gadget states are cached for later use and attributes are added to the search engine as queryable columns, allowing for semantic and effect based searches.
+
 ![2.gif](images/2.gif)
 
 ## Semantic and Hueristic-based Searching
@@ -29,10 +31,12 @@ Currently queryable objects include:
 
 ## Presets
 Presets allow the user to specify dictionary translations for specific keywords into pandas/semantic search queries. Custom presets are saved to the BinaryView along with the rest of the cache. Each architecture is already defined with a set of architecture-tied presets.
+
 ![5.png](images/5.png)
 
 ## Prestates
 Prestates allow one to specify register-context before analysis. These take the place of individually definable registers, as well as a coredump import feature. Importing a coredump will add its register context and include available memory mappings from the corefile in analysis context for possible resolving.
+
 ![6.png](images/6.png)
 
 # Architecture Support
