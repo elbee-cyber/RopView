@@ -28,6 +28,7 @@ class SearchFilter:
         # Empited query, return normal
         if query == '':
             self.renderer.gsearch()
+            self.setStatus("")
             return
 
         # Parse disasm option
@@ -143,6 +144,7 @@ class SearchFilter:
         for reg in self.__semanticRegs:
             include += "disasm.str.contains('"+reg+"') or "
         search_space = self.attemptQuery(include[:-4])
+        self.setStatus("")
         # Unshuffled gadgets offer quicker matches by sorting gadgets based on critical regs and pops
         #random.shuffle(search_space)
 
@@ -206,7 +208,7 @@ class SearchFilter:
         results = []
         # Remove unescaped $ chars
         query = re.sub(r'[^\\]\$|^\$','',query)
-        debug_notify(query)
+        #debug_notify(query)
         try:
             resultsDF = self.full_df.query(query)
         except Exception as e:
