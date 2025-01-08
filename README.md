@@ -35,7 +35,7 @@ Presets allow the user to specify dictionary translations for specific keywords 
 Prestates allow one to specify register-context before analysis. These take the place of individually definable registers, as well as a coredump import feature. Importing a coredump will add its register context and include available memory mappings from the corefile in analysis context for possible resolving.
 ![6.png](images/6.png)
 
-# Support
+# Architecture Support
 ROPView currently supports the following architectures:
 - i386
 - amd64
@@ -65,7 +65,7 @@ RopView relies on the following dependencies for its core functionality
 ![9.gif](images/9.gif)
 
 # Contributions
-Contributions are welcome! Please open an issue if you encounter a bug. PRs are reviewed periodically.
+Contributions are welcome! Please open an issue if you encounter a bug. PRs are reviewed periodically. Please reach me on my blog is needed: https://faultpoint.com
 
 # Installation
 Install this plugin by cloning this repo directly into `~/.binaryninja/plugins`
