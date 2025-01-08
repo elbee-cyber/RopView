@@ -61,7 +61,7 @@ RopView relies on the following dependencies for its core functionality
 ![7.gif](images/7.gif)
 - execve
 ![8.gif](images/8.gif)
-- Range is > 0x1000 and is only ASCII (excluding first byte)
+- Address range is > 0x1000 and is ASCII constrained (excluding first byte)
 ![9.gif](images/9.gif)
 
 # Contributions
