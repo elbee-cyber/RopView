@@ -4,6 +4,8 @@
 
 RopView is a gadget analysis framework for BinaryNinja capable of granular per-instruction based analysis and complex logical queries.
 
+**V2 to be released 2/22/25**
+
 # Features
 ## Gadget Search
 Gadget searching and pooling is fully integrated into the BinaryView and takes advantage of the currently loaded session for quick discovery and caching, making it faster than many similar ROP tools. Additionally, the usual options are available to configure the search settings and constrain the gadget pool appropriately. For a detailed technical explanation, refer to [this post](https://faultpoint.com/post/2024-06-02-binja-plugin-ropview/).
