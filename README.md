@@ -15,7 +15,7 @@ In the right pane, an analysis is shown of the currently selected gadget in the 
 
 ![2.gif](images/2.gif)
 
-## Semantic and Hueristic-based Searching
+## Semantic and Constraint-based Search Engine Using Pandas
 During the gadget searching and analysis process, gadgets are cached for later access in addition to being added to Dataframe columns for fast, data-driven search queries. The search filter takes advantage of [pandas](https://pandas.pydata.org/), a data-analysis library that allows for collective and aggregated data analysis. This allows RopView to query advanced logical statements on specific gadget attributes (inst_cnt, bytes, disasm, etc) with metadata (count, contains, etc). The result is a much more capable gadget search engine in comparison to other frameworks. Included in these queryable attributes are end-state register values derived from a gadget's corresponding analysis state, which allows for effect-based semantic searching. Additionally, the entire gadget pool dataframe can be exported to a csv for later data analysis in options. Searchable objects are capable of processing whatever may be an attribute of its relative `Series` object and most options can include regex. Default search behavior searches for mnemonic matches in disasm.
 
 Currently queryable objects include:
