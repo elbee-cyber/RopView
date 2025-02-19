@@ -400,7 +400,13 @@ class GadgetAnalysis:
             return
 
         # Resolve segment data
-        uc.mem_write(to_map[0], self.bv.read(to_map[0],to_map[1]))
+        data = self.bv.read(to_map[0],to_map[1])
+
+        # Fall back to coredump
+        if data == b'' and self.bv.session_data['RopView']['cf'] is not None:
+            data = self.bv.session_data['RopView']['cf'].read(to_map[0],to_map[1])
+            
+        uc.mem_write(to_map[0], data)
 
         # Resolve segment protections
         seg = self.bv.get_segment_at(addr)

@@ -879,6 +879,12 @@ class Ui_Form(object):
 
         self.verticalLayout_9.addLayout(self.corefileBox)
 
+        self.betaLabel = QLabel(self.PrestateView)
+        self.betaLabel.setObjectName(u"betaLabel")
+        self.betaLabel.setAlignment(Qt.AlignCenter)
+
+        self.verticalLayout_9.addWidget(self.betaLabel)
+
         self.horizontalSpacer = QSpacerItem(879, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
         self.verticalLayout_9.addItem(self.horizontalSpacer)
@@ -1274,6 +1280,7 @@ class Ui_Form(object):
         self.reglabel_32.setText(QCoreApplication.translate("Form", u"empty", None))
         self.regedit_32.setPlaceholderText(QCoreApplication.translate("Form", u"0x0", None))
         self.corefileButton.setText(QCoreApplication.translate("Form", u"Import Corefile", None))
+        self.betaLabel.setText(QCoreApplication.translate("Form", u"Warning: The corefile feature is currently in beta and may be incomplete.", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.PrestateView), QCoreApplication.translate("Form", u"Prestates", None))
         self.keyLabel.setText(QCoreApplication.translate("Form", u"Create", None))
         self.keyEdit.setPlaceholderText(QCoreApplication.translate("Form", u"cet", None))

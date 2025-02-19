@@ -1,4 +1,4 @@
 capstone==5.0.1
 pandas==2.2.2
 unicorn==2.0.1.post1
-pwntools==4.10.0
+lief==0.16.2
