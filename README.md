@@ -1,4 +1,4 @@
-# RopView (v2.1)
+# RopView (v2.2)
 Author: **elbee**
 
 _RopView is a gadget analysis framework for BinaryNinja capable of granular per-instruction based analysis and complex logical queries._
