@@ -73,3 +73,6 @@ Contributions are welcome! Please open an issue if you encounter a bug. PRs are 
 
 # Installation
 Install this plugin by cloning this repo directly into `~/.binaryninja/plugins`
+
+# Making ROP Better with CPU Emulation and Realtime Analysis - DistrictCon Year 0
+https://www.youtube.com/watch?v=ujAmjnR-5vY
