@@ -24,7 +24,7 @@
     "dependencies": {
         "pip": [
             "unicorn",
-            "keystone_engine",
+            "lief",
             "capstone",
             "pandas"
         ],
