@@ -1,8 +1,10 @@
-from .constants import arch, REG_NOT_ANALYZED, REG_CONTROLLED, debug_notify
-from .GadgetSearch import execute_on_main_thread_and_wait, run_progress_dialog
-from .GadgetAnalysis import GadgetAnalysis
+from binaryninja import execute_on_main_thread_and_wait, run_progress_dialog
+
 import pandas as pd
 import re
+
+from .constants import arch, REG_NOT_ANALYZED, REG_CONTROLLED, debug_notify
+from .GadgetAnalysis import GadgetAnalysis
 
 
 class SearchFilter:
