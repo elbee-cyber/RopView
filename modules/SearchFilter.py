@@ -1,8 +1,9 @@
-from .constants import *
-from .GadgetSearch import *
-from .GadgetAnalysis import *
+from .constants import arch, REG_NOT_ANALYZED, REG_CONTROLLED, debug_notify
+from .GadgetSearch import execute_on_main_thread_and_wait, run_progress_dialog
+from .GadgetAnalysis import GadgetAnalysis
 import pandas as pd
-import re,random
+import re
+
 
 class SearchFilter:
 
@@ -51,11 +52,11 @@ class SearchFilter:
             query = query.replace('\\x','')
             gaveAttr = True
 
-        # .has() -> .contains() 
+        # .has() -> .contains()
         if '.has(' in query:
             query = query.replace('.has(','.contains(')
             gaveAttr = True
-        
+
         # Parse presets
         for preset, value in self.bv.session_data['RopView']['presets'].items():
             if preset in query:
@@ -77,25 +78,25 @@ class SearchFilter:
         query = query.replace('* ','*')
         query = query.replace('< ','<')
         query = query.replace('> ','>')
-        
-        if len(re.findall("=|-|\+|/|\*|<|>",query)) > 0:
+
+        if len(re.findall(r"=|-|\+|/|\*|<|>",query)) > 0:
             gaveAttr = True
 
         # Semantic regs
         semantic = []
 
         # Transform semantic searches of type reg[><=/*+-]
-        ## Transformation: ((reg[><=/*+-] or reg==FULL_CONTROL) and not reg==NOT_ANALYZED)
+        # Transformation: ((reg[><=/*+-] or reg==FULL_CONTROL) and not reg==NOT_ANALYZED)
         replacements = []
         for reg in arch[self.bv.arch.name]['prestateOpts']:
             reg = reg.replace('$','')
-            if re.search(reg+'[\>\<=\-+\/*]',query) is not None:
-                reg_matches = re.finditer(reg+'[\>\<=\-+\/*]{1,2}',query)
+            if re.search(reg + r'[\>\<=\-+\/*]',query) is not None:
+                reg_matches = re.finditer(reg + r'[\>\<=\-+\/*]{1,2}',query)
                 for match in reg_matches:
-                    extract_reg = re.sub('[\>\<=\-+\/*]{1,2}','',match.group())
+                    extract_reg = re.sub(r'[\>\<=\-+\/*]{1,2}','',match.group())
                     space_index = query[match.span()[1]:].find(' ')
                     if space_index != -1:
-                        subquery = query[match.span()[0]:space_index+len(query[:match.span()[1]])]
+                        subquery = query[match.span()[0]:space_index + len(query[:match.span()[1]])]
                     else:
                         subquery = query[match.span()[0]:]
                     replacements.append((subquery,"(({} or {}=={}) and not {}=={})".format(subquery, extract_reg, REG_CONTROLLED, extract_reg, REG_NOT_ANALYZED)))
@@ -108,8 +109,8 @@ class SearchFilter:
             if not run_progress_dialog("Performing semantic search",True,self.semantic):
                 status = "Semantic search on "
                 for reg in semantic:
-                    status += reg+", "
-                self.setStatus(status[:-2]+" canceled",True)
+                    status += reg + ", "
+                self.setStatus(status[:-2] + " canceled",True)
 
         # Default search behaviour
         if not gaveAttr and len(semantic) == 0:
@@ -127,7 +128,7 @@ class SearchFilter:
             if len(results) == 0:
                 self.setStatus("Semantic search failed",True)
             else:
-                self.setStatus("Semantic search completed")            
+                self.setStatus("Semantic search completed")
 
         # Build pool and update rendering
         if len(results) == 0:
@@ -148,11 +149,11 @@ class SearchFilter:
         # Only search spaces operating on target registers
         include = ""
         for reg in self.__semanticRegs:
-            include += "disasm.str.contains('"+reg+"') or "
+            include += "disasm.str.contains('" + reg + "') or "
         search_space = self.attemptQuery(include[:-4])
         self.setStatus("")
         # Unshuffled gadgets offer quicker matches by sorting gadgets based on critical regs and pops
-        #random.shuffle(search_space)
+        # random.shuffle(search_space)
 
         # Prevent exhaustion
         limit = int(self.ui.semanticBox.text())
@@ -183,7 +184,7 @@ class SearchFilter:
                 ga.set_prestate(prestate)
                 try:
                     ga.analyze()
-                except:
+                except Exception:
                     break
                 reg_vals = ga.end_state
                 self.bv.session_data['RopView']['cache']['analysis'][addr] = ga.saveState()
@@ -200,7 +201,7 @@ class SearchFilter:
             for reg,val in reg_vals.items():
                 if reg not in self.full_df.columns:
                     continue
-                if (reg not in allowed_regs) and ('$'+reg not in allowed_regs):
+                if (reg not in allowed_regs) and ('$' + reg not in allowed_regs):
                     continue
                 if self.full_df.loc[self.full_df['addr'] == addr, reg].iloc[0] != REG_NOT_ANALYZED:
                     continue
@@ -214,7 +215,7 @@ class SearchFilter:
         results = []
         # Remove unescaped $ chars
         query = re.sub(r'[^\\]\$|^\$','',query)
-        #debug_notify(query)
+        # debug_notify(query)
         try:
             resultsDF = self.full_df.query(query)
         except Exception as e:
@@ -251,7 +252,7 @@ class SearchFilter:
         self.bv.session_data['RopView']['dataframe'] = self.full_df
         # Add reg columns
         for reg in self.regs:
-            self.full_df[reg.replace('$','')]=REG_NOT_ANALYZED
+            self.full_df[reg.replace('$','')] = REG_NOT_ANALYZED
 
     def setStatus(self,text,error=False):
         self.renderer.ui.resultsLabel.setText(text)
