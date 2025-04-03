@@ -1,5 +1,7 @@
 import lief
-from .constants import *
+
+from .constants import arch
+
 
 class Corefile:
 
@@ -24,16 +26,16 @@ class Corefile:
             if isinstance(note, lief.ELF.CorePrStatus):
                 return True
         return False
-    
+
     def isSupported(self):
         if self.arch in self.reg_group:
             return True
         return False
-        
+
     def registers(self):
         if self.regs:
             return self.regs
-        
+
         self.regs = {}
         for note in self.core.notes:
             if not isinstance(note, lief.ELF.CorePrStatus):
@@ -43,7 +45,7 @@ class Corefile:
                 try:
                     value = getattr(self.reg_group[self.arch],reg.upper())
                     self.regs[reg] = reg_values[value.value]
-                except:
+                except Exception:
                     continue
         return self.regs
 
