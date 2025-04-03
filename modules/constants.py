@@ -4,8 +4,8 @@ from capstone import (
 )
 
 from unicorn.unicorn_const import (
-    UC_MODE_MIPS32, UC_MODE_64, UC_MODE_ARM, UC_MODE_THUMB, UC_MODE_BIG_ENDIAN, UC_MODE_LITTLE_ENDIAN,
-    UC_ARCH_X86, UC_ARCH_ARM, UC_ARCH_MIPS, UC_ARCH_ARM64,
+    UC_MODE_MIPS32, UC_MODE_32, UC_MODE_64, UC_MODE_ARM, UC_MODE_THUMB, UC_MODE_BIG_ENDIAN,
+    UC_MODE_LITTLE_ENDIAN, UC_ARCH_X86, UC_ARCH_ARM, UC_ARCH_MIPS, UC_ARCH_ARM64,
 )
 
 from unicorn.x86_const import (
@@ -552,7 +552,7 @@ arch = {
 }
 
 ubitmode = {
-    'x86':UC_MODE_MIPS32,
+    'x86':UC_MODE_32,
     'x86_64':UC_MODE_64,
     'armv7':UC_MODE_ARM,
     'mipsel32':UC_MODE_MIPS32 + UC_MODE_LITTLE_ENDIAN,
