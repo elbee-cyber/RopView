@@ -1,7 +1,23 @@
-from .constants import *
-from unicorn import *
-from unicorn.unicorn_const import *
+from capstone import Cs
+from unicorn import Uc, UcError
+
+from unicorn.unicorn_const import (
+    UC_MEM_WRITE, UC_MEM_READ, UC_MEM_FETCH,
+    UC_MEM_WRITE_UNMAPPED, UC_MEM_READ_UNMAPPED, UC_MEM_FETCH_UNMAPPED, UC_PROT_WRITE,
+    UC_MEM_WRITE_PROT,UC_MEM_READ_PROT, UC_MEM_FETCH_PROT, UC_PROT_READ, UC_PROT_EXEC,
+    UC_HOOK_CODE, UC_HOOK_MEM_INVALID, UC_HOOK_INTR
+)
+
 import struct
+
+from .constants import (
+    arch, uarch, ubitmode, capstone_arch, bitmode, err_desc,
+    GA_ERR_NULL, GA_ERR_WRITE_UNRESOLVED, GA_ERR_READ_UNRESOLVED, GA_ERR_WRITE_PROT,
+    GA_ERR_READ_PROT, GA_ERR_FETCH_PROT, GA_ERR_WRITE_UNMAPPED, GA_ERR_READ_UNMAPPED,
+    GA_ERR_FETCH_UNMAPPED, GA_ERR_INTR, GA_ERR_UNKNOWN, GA_ERR_WRITE, GA_ERR_READ,
+    GA_ERR_FETCH, GA_ERR_RECURSION
+)
+
 
 class GadgetAnalysis:
     '''
@@ -47,10 +63,10 @@ class GadgetAnalysis:
                 self._arch = 'thumb'
             else:
                 self._arch = bv.arch.name
-        except:
+        except Exception:
             self.bv.session_data['RopView']['thumb'] = False
 
-        self.bm = int(arch[self._arch]['bitmode']/8)
+        self.bm = int(arch[self._arch]['bitmode'] / 8)
         self.registers = arch[self._arch]['registers']
 
         # Empty end state
@@ -102,7 +118,7 @@ class GadgetAnalysis:
         self.inst_cnt = self.gadget_str.count(';')
 
         # Cyclic data copied onto the emu stack based on gadget length (is there a deterministic way to get stack size w/o checking tokens)
-        #self.__cyclic_data = self.cyclic(self.inst_cnt*(self.gadget_str.count(',')+1)*2)
+        # self.__cyclic_data = self.cyclic(self.inst_cnt*(self.gadget_str.count(',')+1)*2)
         self.__cyclic_data = self.cyclic(0x1000)
 
         # Resolved mappings saved here
@@ -122,7 +138,7 @@ class GadgetAnalysis:
         # gadget .text
         mu.mem_map(0x1000,0x1000)
         mu.mem_write(0x1000,self._gadget_Raw)
-        mu.mem_protect(0x1000, 0x1000, (UC_PROT_READ+UC_PROT_EXEC))
+        mu.mem_protect(0x1000, 0x1000, (UC_PROT_READ + UC_PROT_EXEC))
 
         # stack
         stack_size = 0x1000
@@ -130,9 +146,9 @@ class GadgetAnalysis:
             try:
                 mu.mem_map(0x2000,stack_size)
                 mu.mem_write(0x2100,self.__cyclic_data[0])
-                mu.mem_protect(0x2000,stack_size,(UC_PROT_READ+UC_PROT_WRITE))
+                mu.mem_protect(0x2000,stack_size,(UC_PROT_READ + UC_PROT_WRITE))
                 break
-            except:
+            except Exception:
                 mu.mem_unmap(0x2000,stack_size)
                 stack_size *= 2
         mu.reg_write(arch[self._arch]['uregs']['sp'],0x2100)
@@ -168,11 +184,11 @@ class GadgetAnalysis:
         self._emulate(mu, mappings)
 
         # Get the final register context
-        ## Should this only be set to RISC architectures?
+        # Should this only be set to RISC architectures?
         context = {}
         for reg in self.registers:
             context[reg] = mu.reg_read(arch[self._arch]['uregs'][reg])
-        
+
         diff = self.reg_diff(context)
 
         # Hook del
@@ -187,11 +203,11 @@ class GadgetAnalysis:
         for state in self.results:
             for key,value in state.items():
                 if value in self.__cyclic_data[1]:
-                    self.results[i][key] = 'Full control (stack) (offset {})'.format(str(int(self.__cyclic_data[1].index(value)*self.bm)))
+                    self.results[i][key] = 'Full control (stack) (offset {})'.format(str(int(self.__cyclic_data[1].index(value) * self.bm)))
             i += 1
         for key,value in diff.items():
             if value in self.__cyclic_data[1]:
-                diff[key] = 'Full control (stack) (offset {})'.format(str(int(self.__cyclic_data[1].index(value)*self.bm)))
+                diff[key] = 'Full control (stack) (offset {})'.format(str(int(self.__cyclic_data[1].index(value) * self.bm)))
 
         # Save err_desc as step value for halted instruction
         if self.err != 0:
@@ -202,7 +218,7 @@ class GadgetAnalysis:
                 if reg not in self.clobbered:
                     self.clobbered.append(reg)
             self.results.append(diff)
-        
+
         # Build used_regs based off of clobbered registers and their prestate values
         for reg in self.clobbered:
             self.used_regs[reg] = self.prestate[reg]
@@ -229,45 +245,45 @@ class GadgetAnalysis:
         segment = self.bv.get_segment_at(addr)
         if addr == 0:
             mappings.insert(0,-1)
-            return GA_ERR_NULL # Null dereference (No recovery)
+            return GA_ERR_NULL  # Null dereference (No recovery)
         if addr == self.last_access[0] and len(self.derefs) > 12:
             mappings.insert(0,-1)
             return GA_ERR_RECURSION
         if access == UC_MEM_WRITE:
             mappings.insert(0,-1)
-            return GA_ERR_WRITE # Invalid write of % at % (No recovery)
+            return GA_ERR_WRITE  # Invalid write of % at % (No recovery)
         if access == UC_MEM_READ:
             mappings.insert(0,-1)
-            return GA_ERR_READ # Invalid read of % at % (No recovery)
+            return GA_ERR_READ  # Invalid read of % at % (No recovery)
         if access == UC_MEM_FETCH:
             mappings.insert(0,-1)
-            return GA_ERR_FETCH # Invalid execution at % (No recovery)
+            return GA_ERR_FETCH  # Invalid execution at % (No recovery)
         if access == UC_MEM_READ_UNMAPPED:
             if segment is None:
                 mappings.insert(0,-1)
-                return GA_ERR_READ_UNMAPPED # Attempted to read unmapped memory at % (Speculative) (No recovery)'
+                return GA_ERR_READ_UNMAPPED  # Attempted to read unmapped memory at % (Speculative) (No recovery)'
             if self.err == GA_ERR_READ_UNRESOLVED:
                 mappings.insert(0,-1)
-            return GA_ERR_READ_UNRESOLVED # Attempted to read unmapped memory at % (Realtime resolve)
+            return GA_ERR_READ_UNRESOLVED  # Attempted to read unmapped memory at % (Realtime resolve)
         if access == UC_MEM_WRITE_UNMAPPED:
             if segment is None:
                 mappings.insert(0,-1)
-                return GA_ERR_WRITE_UNMAPPED # Attempted to write to unmapped memory (% to %) (Speculative) (No recovery)
+                return GA_ERR_WRITE_UNMAPPED  # Attempted to write to unmapped memory (% to %) (Speculative) (No recovery)
             if self.err == GA_ERR_WRITE_UNRESOLVED:
                 mappings.insert(0,-1)
-            return GA_ERR_WRITE_UNRESOLVED # Attempted to write unmapped memory at % (Realtime resolve)
+            return GA_ERR_WRITE_UNRESOLVED  # Attempted to write unmapped memory at % (Realtime resolve)
         if access == UC_MEM_FETCH_UNMAPPED:
             mappings.insert(0,-1)
-            return GA_ERR_FETCH_UNMAPPED # Attempted to fetch unmapped memory at % (No recovery)
+            return GA_ERR_FETCH_UNMAPPED  # Attempted to fetch unmapped memory at % (No recovery)
         if access == UC_MEM_WRITE_PROT:
             mappings.insert(0,-1)
-            return GA_ERR_WRITE_PROT # Attempted write to non-writable memory (% to %) (No recovery)
+            return GA_ERR_WRITE_PROT  # Attempted write to non-writable memory (% to %) (No recovery)
         if access == UC_MEM_FETCH_PROT:
             mappings.insert(0,-1)
-            return GA_ERR_FETCH_PROT # Attempted executing non-executable memory (%) (No recovery)
+            return GA_ERR_FETCH_PROT  # Attempted executing non-executable memory (%) (No recovery)
         if access == UC_MEM_READ_PROT:
             mappings.insert(0,-1)
-            return GA_ERR_READ_PROT # Attempted reading non-readable memory (%) (No recovery)\
+            return GA_ERR_READ_PROT  # Attempted reading non-readable memory (%) (No recovery)\
         mappings.insert(0,-1)
         return GA_ERR_UNKNOWN
 
@@ -284,12 +300,12 @@ class GadgetAnalysis:
         # If -1 in mappings, diagnosis determined an unrecoverable error
         if -1 in mappings:
             return self.err
-        
+
         # Resolve all mappings (assume valid and resolvable)
         for map in mappings:
             self._add_context(mu, map)
             self.derefs.append(mappings.pop(mappings.index(map)))
-        
+
         # Add hook to catch memory violations, diagnose and add future mappings
         h = mu.hook_add(UC_HOOK_MEM_INVALID, self.hook_mem_invalid, mappings)
 
@@ -297,14 +313,14 @@ class GadgetAnalysis:
             # Attempt emulation
             if self._arch == 'thumb':
                 start = start | 1
-            mu.emu_start(start,0x1000+len(self._gadget_Raw),count=self.inst_cnt)
+            mu.emu_start(start,0x1000 + len(self._gadget_Raw),count=self.inst_cnt)
             mu.hook_del(h)
             if self.err == GA_ERR_INTR:
                 self.err = GA_ERR_INTR
             else:
                 self.err = 0
             return 0
-        except UcError as e:
+        except UcError:
             # A memory violation occured
             mu.hook_del(h)
 
@@ -322,8 +338,8 @@ class GadgetAnalysis:
                 sp = arch[self._arch]['uregs'][arch[self._arch]['sp'][0]]
                 mu.reg_write(sp,self.__last_addr)
                 mappings = []
-                self.__base_addr = start+len(self.last_asm)
-                return self._emulate(mu,mappings,start+len(self.last_asm))
+                self.__base_addr = start + len(self.last_asm)
+                return self._emulate(mu,mappings,start + len(self.last_asm))
 
             # Emulate again (the hook should have populated mappings)
             return self._emulate(mu,mappings)
@@ -334,7 +350,7 @@ class GadgetAnalysis:
         :param uc: Unicorn object
         '''
         for region in uc.mem_regions():
-            uc.mem_unmap(region[0],((region[1]-region[0])+1))
+            uc.mem_unmap(region[0],((region[1] - region[0]) + 1))
 
     def __hook_intr(self, uc, intro, foobar):
         self.err = GA_ERR_INTR
@@ -356,7 +372,7 @@ class GadgetAnalysis:
 
         # Save last access for viewtype display
         if address in self.__cyclic_data[1]:
-            self.last_access = ['Stack data',self.__cyclic_data[1].index(address)*self.bm]
+            self.last_access = ['Stack data',self.__cyclic_data[1].index(address) * self.bm]
         else:
             self.last_access = [address,value]
 
@@ -369,7 +385,7 @@ class GadgetAnalysis:
         :param n: Size of cyclic data
         :return: A tuple of the packed and unpacked cyclic data for easy translation for caller
         '''
-        base = int(str(ord('A'))*self.bm,16)
+        base = int(str(ord('A')) * self.bm,16)
         unpacked = []
         packed = b''
         for i in range(0,n):
@@ -405,7 +421,7 @@ class GadgetAnalysis:
         # Fall back to coredump
         if data == b'' and self.bv.session_data['RopView']['cf'] is not None:
             data = self.bv.session_data['RopView']['cf'].read(to_map[0],to_map[1])
-            
+
         uc.mem_write(to_map[0], data)
 
         # Resolve segment protections
@@ -426,8 +442,8 @@ class GadgetAnalysis:
         :param addr: The address to map
         :return: (start, size)
         '''
-        boundary = (addr & ~(4096-1))
-        size = ((addr+10000) & ~(4096-1))-boundary
+        boundary = (addr & ~(4096 - 1))
+        size = ((addr + 10000) & ~(4096 - 1)) - boundary
         return (boundary, size)
 
     def build_endstate(self):
@@ -441,7 +457,7 @@ class GadgetAnalysis:
                 else:
                     self.end_state[reg] = state[reg]
         self.saved_end_states[self.gadget_str] = self.end_state.copy()
-    
+
     def reg_diff(self,context):
         '''
         Diffs the clobbered register values between current and last step of execution
@@ -501,7 +517,7 @@ class GadgetAnalysis:
         # Current disasm
         md = Cs(capstone_arch[self._arch], bitmode(self._arch))
         for i in md.disasm(asm, 0x1000):
-            disasm += i.mnemonic+' '+i.op_str
+            disasm += i.mnemonic + ' ' + i.op_str
 
         # Save last disasm, asm
         self.last_inst = disasm
@@ -526,7 +542,7 @@ class GadgetAnalysis:
 
         # Check if branch occured
         if abs(address - self.__last_pc) > 16:
-            diff['Control flow changed'] = 'Branch to '+hex(address)
+            diff['Control flow changed'] = 'Branch to ' + hex(address)
         self.__last_pc = address
 
         # If last execution cycle an unresolved write/write (recoverable) occured, add the value of the deref to the diff
@@ -534,13 +550,13 @@ class GadgetAnalysis:
             try:
                 diff[hex(self.derefs[-1])] = str(bytes(mu.mem_read(self.derefs[-1],8))) + ' ({})'.format(self.bv.get_sections_at(self.derefs[-1])[0].name)
                 self.err = 0
-            except:
+            except Exception:
                 pass
         if self.err == GA_ERR_READ_UNRESOLVED and len(self.derefs) > 0:
             try:
-                diff['Reads from '+hex(self.derefs[-1])] = str(bytes(mu.mem_read(self.derefs[-1],8))) + ' ({})'.format(self.bv.get_sections_at(self.derefs[-1])[0].name)
+                diff['Reads from ' + hex(self.derefs[-1])] = str(bytes(mu.mem_read(self.derefs[-1],8))) + ' ({})'.format(self.bv.get_sections_at(self.derefs[-1])[0].name)
                 self.err = 0
-            except:
+            except Exception:
                 pass
         # If the stack pointer is corrupted, add to diff
         if corrupt:
@@ -553,10 +569,11 @@ class GadgetAnalysis:
     def saveState(self):
         return State(self.results,self.err,self.used_regs,self.instructions,self.prestate,self.last_access,self.end_state)
 
+
 class State:
     def __init__(self, results, err, used_regs, instructions, prestate, last_access, end_state):
         self.results = results
-        self.err = err 
+        self.err = err
         self.used_regs = used_regs
         self.instructions = instructions
         self.prestate = prestate

@@ -1,15 +1,18 @@
-from PySide6.QtGui import *
-from PySide6.QtWidgets import QTreeWidgetItem, QTreeWidgetItemIterator
-from .GadgetSearch import GadgetSearch
-from .constants import *
-from binaryninja import show_message_box, run_progress_dialog, get_save_filename_input, get_open_filename_input
+from PySide6.QtGui import QColor, QBrush, QFont
+from PySide6.QtWidgets import QTreeWidgetItem
 from PySide6.QtCore import QTimer
+from binaryninja import show_message_box, run_progress_dialog, get_save_filename_input, get_open_filename_input
+
 import re
+
 from .Corefile import Corefile
+from .GadgetSearch import GadgetSearch
+from .constants import arch, gadgets, fflush, REG_NOT_ANALYZED, REG_CONTROLLED
+
 
 class GadgetRender:
     '''
-    Responsible for doing gadget search, rendering to UI gadget search pane, 
+    Responsible for doing gadget search, rendering to UI gadget search pane,
     connecting option changes and updating the pane based on option changes.
 
     Options:
@@ -26,6 +29,7 @@ class GadgetRender:
     Dump
     Color
     '''
+
     def __init__(self, bv, ui):
         '''
         Configure default options, initial gadgetsearch, display right registers into prestate options ui.
@@ -97,20 +101,20 @@ class GadgetRender:
 
         # Load the correct register names into the analysis prestate UI (Options tab)
         reg_label = getattr(self.ui,"reglabel",-1)
-        reg_label.setText(arch[self.bv_arch]['prestateOpts'][0]+'=')
+        reg_label.setText(arch[self.bv_arch]['prestateOpts'][0] + '=')
         i = 2
         while reg_label != -1:
-            reg_label = getattr(self.ui,"reglabel_"+str(i),-1)
+            reg_label = getattr(self.ui,"reglabel_" + str(i),-1)
             if reg_label == -1:
                 break
             try:
-                reg_label.setText(arch[self.bv_arch]['prestateOpts'][i-1]+'=')
+                reg_label.setText(arch[self.bv_arch]['prestateOpts'][i - 1] + '=')
             except IndexError:
                 # Might look prettier if we do a modulo check to add horizontal spaces in the vertical layout so its all aligned
                 reg_label.setVisible(False)
-                getattr(self.ui,"regedit_"+str(i)).setVisible(False)
+                getattr(self.ui,"regedit_" + str(i)).setVisible(False)
             i += 1
-        
+
         # Disable thumb option if not ARM
         if 'armv7' == self.bv_arch:
             self.ui.thumbOpt.setVisible(True)
@@ -123,7 +127,7 @@ class GadgetRender:
         # remove empty gadget classes
         for pool in gadgets[self.bv_arch]:
             if not gadgets[self.bv_arch][pool]:
-                getattr(self.ui,pool+"Opt").setVisible(False)
+                getattr(self.ui,pool + "Opt").setVisible(False)
                 options[pool] = False
 
         self.repool(self.depth,options['rop'],options['jop'],options['cop'],options['sys'])
@@ -174,21 +178,21 @@ class GadgetRender:
         fpath = get_open_filename_input("corefile:")
         if fpath is None:
             return
-        
+
         cf = Corefile(fpath,self.bv_arch)
         if cf.isCore() and cf.isSupported():
             self.bv.session_data['RopView']['cf'] = cf
         else:
             show_message_box("Invalid corefile!","Not a coredump or architecture is not supported!")
             return
-        
+
         # Update prestate pane w/ coredump regs
         i = 1
         for reg, val in cf.registers().items():
-            if i==1:
+            if i == 1:
                 getattr(self.ui,"regedit",-1).setText(hex(val))
             else:
-                getattr(self.ui,"regedit_"+str(i)).setText(hex(val))
+                getattr(self.ui,"regedit_" + str(i)).setText(hex(val))
             i += 1
 
     def search_canceled(self):
@@ -206,7 +210,7 @@ class GadgetRender:
         font.setFamily(u"Hack")
         found = False
         # Add gadgets to gadget search pane
-        self.ui.statusLabel.setText("Gadget count: "+str(len(pool)))
+        self.ui.statusLabel.setText("Gadget count: " + str(len(pool)))
         for addr, text in pool:
             item = QTreeWidgetItem(self.ui.gadgetPane.topLevelItemCount())
             item.setText(0,hex(addr))
@@ -283,7 +287,7 @@ class GadgetRender:
         # Inst cnt
         if self.inst_cnt != 0:
             for key, val in temp.items():
-                if len(val.split(';'))-1 > self.inst_cnt:
+                if len(val.split(';')) - 1 > self.inst_cnt:
                     if key in pool:
                         pool.pop(key)
 
@@ -299,14 +303,14 @@ class GadgetRender:
         prestate[reg_label] = self.translateValue(reg_value)
         i = 2
         while reg_label != -1:
-            reg_label = getattr(self.ui,"reglabel_"+str(i),-1)
-            reg_value = getattr(self.ui,"regedit_"+str(i),-1)
+            reg_label = getattr(self.ui,"reglabel_" + str(i),-1)
+            reg_value = getattr(self.ui,"regedit_" + str(i),-1)
             if reg_label == -1 or reg_value == -1:
                 break
             prestate[reg_label.text().replace('=','')] = self.translateValue(reg_value.text())
             i += 1
         return prestate
-        
+
     def translateValue(self,value):
         '''
         Translates hex strings
@@ -315,7 +319,7 @@ class GadgetRender:
         globs = {"__builtins__": {}}
         try:
             ret = int(eval(value, globs, {}))
-        except:
+        except Exception:
             pass
         return ret
 
@@ -329,9 +333,9 @@ class GadgetRender:
         bad = self.ui.badBytesEdit.text().split(',')
         for b in bad:
             try:
-                check = int(b,16)
+                _ = int(b,16)
                 self.bad_bytes.append(b.replace('0x',''))
-            except:
+            except Exception:
                 pass
         self.update_and_sort()
 
@@ -371,7 +375,7 @@ class GadgetRender:
             try:
                 self.address_range.append(int(addr[0],16))
                 self.address_range.append(int(addr[1],16))
-            except:
+            except Exception:
                 self.address_range = []
                 return
             self.update_and_sort()
@@ -464,7 +468,6 @@ class GadgetRender:
         cop = self.gs.cop
         thumb = self.ui.thumbOpt.isChecked()
         self.repool(dep,rop,jop,cop,sys,thumb=thumb)
-        
 
     def prepareDump(self):
         self.dump = self.ui.dumpOpt.isChecked()

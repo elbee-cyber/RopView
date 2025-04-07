@@ -1,6 +1,9 @@
-from .constants import *
+from binaryninja import run_progress_dialog, worker_interactive_enqueue
+from capstone import Cs
 import re
-from binaryninja import *
+
+from .constants import gadgets, capstone_arch, arch, bitmode
+
 
 class GadgetSearch:
     """
@@ -9,7 +12,7 @@ class GadgetSearch:
 
     def __init__(self, bv, depth=10, rop=True, jop=False, cop=False, sys=True, thumb=False):
         """
-        Responsible for gadget searching with applied options. 
+        Responsible for gadget searching with applied options.
         Find all control instructions in executable segments and count back by depth, saving each gadget
         :param bv: BinaryView
         :param depth: How many bytes back from a ctrl to save gadgets (instructions on x86 do not have a constant size, special handling required for other archs) (default=11)
@@ -21,7 +24,7 @@ class GadgetSearch:
         self.__bv = bv
         self.arch = bv.arch.name
 
-        ### !! GadgetSearch should be the only entity allowed to modify this !! ###
+        # !! GadgetSearch should be the only entity allowed to modify this !! #
         # Dict of gadget mnemonics {addr:str}
         bv.session_data['RopView']['gadget_disasm'] = {}
         # Dict of raw gadgets {addr:bytes}
@@ -72,7 +75,7 @@ class GadgetSearch:
         # update
         curr = self.__bv.start
         last_iter = 0
-        full = (self.__bv.end-self.__bv.start) * len(self.__control_insn)
+        full = (self.__bv.end - self.__bv.start) * len(self.__control_insn)
         if self.arch == 'thumb':
             alignment = 2
         else:
@@ -84,7 +87,7 @@ class GadgetSearch:
                 continue
 
             # Used for progress iter
-            last_iter +=1
+            last_iter += 1
 
             curr_site = self.__bv.start
 
@@ -95,7 +98,7 @@ class GadgetSearch:
                 if curr_site is None:
                     break
                 elif alignment != 1:
-                    curr_site -= (alignment-len(ctrl[0]))
+                    curr_site -= (alignment - len(ctrl[0]))
 
                 # Alignment==1 if no alignment
                 if curr_site % alignment != 0:
@@ -106,13 +109,12 @@ class GadgetSearch:
                 save = curr_site
 
                 # Progress bar
-                curr = save+(self.__bv.end*last_iter)
-                if update(curr,full) == False:
+                curr = save + (self.__bv.end * last_iter)
+                if update(curr,full) is False:
                     self.__bv.session_data['RopView']['gadget_disasm'] = {}
                     self.__bv.session_data['RopView']['gadget_asm'] = {}
                     fflush(self.__bv)
                     return False
-                
 
                 # Confirm the gadget site contains the current control instruction
                 if re.match(ctrl[2],self.__bv.read(curr_site,ctrl[1])) is not None:
@@ -122,9 +124,9 @@ class GadgetSearch:
                         if segment is None or not segment.executable:
                             break
                         else:
-                            index = i*alignment
-                            curr_site = save-index
-                            insn_size = index+ctrl[1]
+                            index = i * alignment
+                            curr_site = save - index
+                            insn_size = index + ctrl[1]
 
                             # Handle delay slots
                             if ds:
@@ -153,7 +155,7 @@ class GadgetSearch:
                                     occured += matches
                             if occured > 1:
                                 continue
-                            
+
                             # Broken gadget check
                             if not disasm == '' and not disasm == ' ':
                                 tokened = disasm.split(';')
@@ -188,8 +190,8 @@ class GadgetSearch:
                             self.__bv.session_data['RopView']['gadget_asm'].update([(curr_site, insn)])
 
                 # Next address for search
-                curr_site = save+alignment
-        
+                curr_site = save + alignment
+
         # Save metadata to bv
         worker_interactive_enqueue(self.saveCache)
 
@@ -208,11 +210,11 @@ class GadgetSearch:
         self.__bv.store_metadata("RopView.gadget_asm",self.__bv.session_data['RopView']['gadget_asm'])
 
     def load_from_cache(self, update):
-        disasm_key = self.__cache+"_disasm"
-        asm_key = self.__cache+"_asm"
+        disasm_key = self.__cache + "_disasm"
+        asm_key = self.__cache + "_asm"
         disasm_cache = self.__bv.session_data['RopView']['cache'][disasm_key]
         asm_cache = self.__bv.session_data['RopView']['cache'][asm_key]
-        
+
         # For progress bar
         iteration = 0
         full = len(disasm_cache)
