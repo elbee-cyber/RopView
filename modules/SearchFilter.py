@@ -36,22 +36,22 @@ class SearchFilter:
 
         # Parse disasm option
         if 'disasm' in query:
-            if 'disasm.' in query:
-                query = query.replace('disasm.','disasm.str.')
+            if 'disasm.' in query and 'disasm.str.' not in query:
+                query = query.replace('disasm.', 'disasm.str.')
             gaveAttr = True
 
         # Parse loc option
         if 'loc' in query:
-            if 'loc.' in query:
-                query = query.replace('loc.','loc.str.')
+            if 'loc.' in query and 'loc.str.' not in query:
+                query = query.replace('loc.', 'loc.str.')
             gaveAttr = True
 
         # Parse bytes option
         if 'bytes' in query:
-            if 'bytes.' in query:
-                query = query.replace('bytes.','bytes.str.')
-            query = query.replace('0x','')
-            query = query.replace('\\x','')
+            if 'bytes.' in query and 'bytes.str.' not in query:
+                query = query.replace('bytes.', 'bytes.str.')
+            query = query.replace('0x', '')
+            query = query.replace('\\x', '')
             gaveAttr = True
 
         # .has() -> .contains()
@@ -109,10 +109,9 @@ class SearchFilter:
         if len(semantic) > 0:
             self.__semanticRegs = semantic
             if not run_progress_dialog("Performing semantic search",True,self.semantic):
-                status = "Semantic search on "
-                for reg in semantic:
-                    status += reg + ", "
-                self.setStatus(status[:-2] + " canceled",True)
+                status = "Semantic search canceled for registers: "
+                status += ", ".join(semantic)
+                self.setStatus(status, True)
 
         # Default search behaviour
         if not gaveAttr and len(semantic) == 0:
@@ -128,9 +127,10 @@ class SearchFilter:
 
         if len(semantic) > 0:
             if len(results) == 0:
-                self.setStatus("Semantic search failed",True)
+                limit = int(self.ui.semanticBox.text())
+                self.setStatus(f"No gadgets found matching semantic criteria (searched {limit} gadgets)", True)
             else:
-                self.setStatus("Semantic search completed")
+                self.setStatus(f"Semantic search completed: {len(results)} gadgets found")
 
         # Build pool and update rendering
         if len(results) == 0:
