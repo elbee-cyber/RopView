@@ -128,9 +128,9 @@ class SearchFilter:
         if len(semantic) > 0:
             if len(results) == 0:
                 limit = int(self.ui.semanticBox.text())
-                self.setStatus(f"No gadgets found matching semantic criteria (searched {limit} gadgets)", True)
+                self.setStatus(f"No gadgets found matching semantic criteria (searched {limit} gadgets).", True)
             else:
-                self.setStatus(f"Semantic search completed: {len(results)} gadgets found")
+                self.setStatus(f"Semantic search completed.")
 
         # Build pool and update rendering
         if len(results) == 0:
