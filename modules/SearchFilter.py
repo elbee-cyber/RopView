@@ -59,6 +59,9 @@ class SearchFilter:
             query = query.replace('.has(','.contains(')
             gaveAttr = True
 
+        # Fix double .str.str
+        query = query.replace('.str.str','.str')
+
         # Parse presets
         for preset, value in self.bv.session_data['RopView']['presets'].items():
             if preset in query:
@@ -81,7 +84,7 @@ class SearchFilter:
         query = query.replace('< ','<')
         query = query.replace('> ','>')
 
-        if len(re.findall(r"=|-|\+|/|\*|<|>",query)) > 0:
+        if re.search(r"[=+\-/*<>]", query):
             gaveAttr = True
 
         # Semantic regs
@@ -217,12 +220,11 @@ class SearchFilter:
         results = []
         # Remove unescaped $ chars
         query = re.sub(r'[^\\]\$|^\$','',query)
-        # debug_notify(query)
         try:
             resultsDF = self.full_df.query(query)
         except Exception as e:
             self.setStatus("Invalid query provided, please try again",True)
-            debug_notify(str(e))
+            debug_notify(str(e),"RopView.SearchFilter.attemptQuery")
             return results
         for index, row in resultsDF.iterrows():
             results.append(row['addr'])

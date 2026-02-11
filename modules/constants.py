@@ -320,11 +320,11 @@ mipsel32 = {
     'prestateOpts':['$v0','$v1','$a0','$a1','$a2','$a3','$t0','$t1','$t2','$t3','$t4','$t5','$t6','$t7','$t8','$t9','$s0','$s1','$s2','$s3','$s4','$s5','$s6','$s7','$gp','$fp'],
     'presets':{
         # From ROPgadget https://github.com/JonathanSalwan/ROPgadget/blob/90d9ff7223bdc8064b437045dec1dbd270043698/ropgadget/core.py#L126
-        'stackfinder': r'disasm.str.contains(r"addiu [^;]*, \$sp")',
-        'system':r'disasm.str.contains(r"addiu \$a0, \$sp") or $a0==0xdeadbeef',
-        'tails':r'disasm.str.contains(r"lw \$t[0-9], 0x[0-9a-z]{0,4}\(\$s[0-9]") or disasm.str.contains("move \$t9, \$(s|a|v)")',
-        'lia0':r'disasm.str.contains(r"li \$a0")',
-        'registers':r'disasm.str.contains(r"lw \$ra, 0x[0-9a-z]{0,4}\(\$sp")',
+        'stackfinder': r'disasm.str.contains("addiu [^;]*, \\$sp")',
+        'system':'disasm.str.contains("addiu $a0, $sp", regex=False) or $a0==0xdeadbeef',
+        'tails':'disasm.str.contains("lw [$]t[0-9], 0x[0-9a-z]{0,4}[(][$]s[0-9][)]") or disasm.str.contains("move $t9,", regex=False)',
+        'lia0':r'disasm.str.contains("li \\$a0")',
+        'registers':r'disasm.str.contains("lw \\$ra, 0x[0-9a-z]{0,4}\\(\\$sp\\)")',
         'sleep_a0':'$a0 > 0 and $a0 < 600'
     },
     'blacklist':[],
@@ -599,11 +599,10 @@ def bitmode(arch):
         return CS_MODE_MIPS32 + CS_MODE_BIG_ENDIAN
 
 
-def debug_notify(msg):
-    log_info(str(msg),'RopView.Notify')
+def debug_notify(msg, loc):
+    log_info(str(msg),loc)
 
-
-def fflush(bv):
+def flush(bv):
     bv.session_data['RopView']['cache']['rop_disasm'] = {}
     bv.session_data['RopView']['cache']['rop_asm'] = {}
     bv.session_data['RopView']['cache']['jop_disasm'] = {}

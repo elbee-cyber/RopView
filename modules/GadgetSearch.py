@@ -2,7 +2,7 @@ from binaryninja import run_progress_dialog, worker_interactive_enqueue
 from capstone import Cs
 import re
 
-from .constants import gadgets, capstone_arch, arch, bitmode
+from .constants import gadgets, capstone_arch, arch, bitmode, flush
 
 
 class GadgetSearch:
@@ -113,7 +113,7 @@ class GadgetSearch:
                 if update(curr,full) is False:
                     self.__bv.session_data['RopView']['gadget_disasm'] = {}
                     self.__bv.session_data['RopView']['gadget_asm'] = {}
-                    fflush(self.__bv)
+                    flush(self.__bv)
                     return False
 
                 # Confirm the gadget site contains the current control instruction

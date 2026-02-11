@@ -7,7 +7,7 @@ import re
 
 from .Corefile import Corefile
 from .GadgetSearch import GadgetSearch
-from .constants import arch, gadgets, fflush, REG_NOT_ANALYZED, REG_CONTROLLED
+from .constants import arch, gadgets, flush, REG_NOT_ANALYZED, REG_CONTROLLED
 
 
 class GadgetRender:
@@ -351,7 +351,7 @@ class GadgetRender:
         cop = self.gs.cop
         sys = self.gs.sys
         thumb = self.ui.thumbOpt.isChecked()
-        fflush(self.bv)
+        flush(self.bv)
         self.bv.session_data['RopView']['cache_coherent'] = False
         self.repool(dep,rop,jop,cop,sys,thumb=thumb)
 
@@ -393,7 +393,7 @@ class GadgetRender:
         cop = self.gs.cop
         sys = self.gs.sys
         thumb = self.ui.thumbOpt.isChecked()
-        fflush(self.bv)
+        flush(self.bv)
         self.bv.session_data['RopView']['cache_coherent'] = False
         self.repool(dep,rop,jop,cop,sys,thumb=thumb)
 
@@ -431,7 +431,7 @@ class GadgetRender:
         dep = self.gs.depth
         sys = self.gs.sys
         thumb = self.ui.thumbOpt.isChecked()
-        fflush(self.bv)
+        flush(self.bv)
         self.bv.session_data['RopView']['gadget_disasm'] = {}
         self.bv.session_data['RopView']['gadget_asm'] = {}
         self.bv.session_data['RopView']['cache_coherent'] = False
@@ -457,7 +457,7 @@ class GadgetRender:
             show_message_box("Dataframe uninitialized","Start a search to create dataframe")
 
     def flush(self):
-        fflush(self.bv)
+        flush(self.bv)
         show_message_box("Cache cleared","Gadget caches flushed")
 
     def gsearch(self):
