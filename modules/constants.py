@@ -1,6 +1,6 @@
 from capstone import (
     CS_MODE_64, CS_MODE_32, CS_MODE_ARM, CS_MODE_THUMB, CS_MODE_BIG_ENDIAN, CS_MODE_LITTLE_ENDIAN,
-    CS_MODE_MIPS32, CS_ARCH_X86, CS_ARCH_ARM, CS_ARCH_MIPS, CS_ARCH_ARM64,
+    CS_MODE_MIPS32, CS_ARCH_X86, CS_ARCH_ARM, CS_ARCH_MIPS, CS_ARCH_AARCH64,
 )
 
 from unicorn.unicorn_const import (
@@ -575,7 +575,7 @@ capstone_arch = {
     'x86':CS_ARCH_X86,
     'x86_64':CS_ARCH_X86,
     'armv7':CS_ARCH_ARM,
-    'aarch64':CS_ARCH_ARM64,
+    'aarch64':CS_ARCH_AARCH64,
     'mipsel32':CS_ARCH_MIPS,
     'thumb':CS_ARCH_ARM,
     'mips32':CS_ARCH_MIPS
